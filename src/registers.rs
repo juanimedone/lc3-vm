@@ -1,3 +1,7 @@
+use crate::flags::Flag;
+
+pub const PC_START: u16 = 0x3000; // default starting position
+
 pub enum Register {
     R0 = 0,
     R1,
@@ -18,9 +22,11 @@ pub struct Registers {
 
 impl Registers {
     pub fn new() -> Self {
-        Self {
-            registers: vec![0; Register::COUNT as usize],
-        }
+        let mut registers = vec![0; Register::COUNT as usize];
+        registers[Register::PC as usize] = PC_START;
+        registers[Register::COND as usize] = Flag::ZRO as u16;
+
+        Self { registers }
     }
 
     pub fn read(&self, reg: Register) -> u16 {

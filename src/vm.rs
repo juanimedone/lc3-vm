@@ -1,11 +1,8 @@
-use crate::flags::Flag;
 use crate::instructions::Opcode;
 use crate::memory::Memory;
-use crate::registers::{Register, Registers};
+use crate::registers::*;
 use std::fs::File;
 use std::io::Read;
-
-pub const PC_START: u16 = 0x3000; // default starting position
 
 pub struct VM {
     memory: Memory,
@@ -14,12 +11,9 @@ pub struct VM {
 
 impl VM {
     pub fn new() -> Self {
-        let mut registers = Registers::new();
-        registers.write(Register::COND, Flag::ZRO as u16);
-        registers.write(Register::PC, PC_START);
         Self {
             memory: Memory::new(),
-            registers,
+            registers: Registers::new(),
         }
     }
 
