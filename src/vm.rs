@@ -1,76 +1,100 @@
+use crate::flags::Flag;
+use crate::memory::Memory;
+use crate::opcodes::Opcode;
+use crate::registers::{Register, Registers};
 use std::fs::File;
 use std::io::Read;
 
-pub const MEMORY_SIZE: usize = 65536; // 64 KB of memory (65536 locations)
 pub const PC_START: u16 = 0x3000; // default starting position
 
-#[derive(Debug)]
-pub enum Register {
-    R0 = 0,
-    R1,
-    R2,
-    R3,
-    R4,
-    R5,
-    R6,
-    R7,
-    PC,
-    COND,
-    COUNT,
+pub struct VM {
+    memory: Memory,
+    registers: Registers,
 }
 
-#[derive(Debug)]
-pub enum Flag {
-    POS = 1 << 0, // P
-    ZRO = 1 << 1, // Z
-    NEG = 1 << 2, // N
-}
-
-#[derive(Debug)]
-pub enum Opcode {
-    BR = 0, // branch
-    ADD,    // add
-    LD,     // load
-    ST,     // store
-    JSR,    // jump register
-    AND,    // bitwise and
-    LDR,    // load register
-    STR,    // store register
-    RTI,    // unused
-    NOT,    // bitwise not
-    LDI,    // load indirect
-    STI,    // store indirect
-    JMP,    // jump
-    RES,    // reserved (unused)
-    LEA,    // load effective address
-    TRAP,   // execute trap
-}
-
-pub fn initialize_memory() -> Vec<u16> {
-    vec![0; MEMORY_SIZE]
-}
-
-pub fn initialize_registers() -> Vec<u16> {
-    vec![0; Register::COUNT as usize]
-}
-
-pub fn read_image(file_path: &str, memory: &mut Vec<u16>) -> Result<(), String> {
-    let mut file = File::open(file_path).map_err(|e| e.to_string())?;
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
-    for (i, chunk) in buffer.chunks(2).enumerate() {
-        if chunk.len() == 2 {
-            let value = u16::from_be_bytes([chunk[0], chunk[1]]);
-            memory[i] = value;
+impl VM {
+    pub fn new() -> Self {
+        let mut registers = Registers::new();
+        registers.write(Register::COND, Flag::ZRO as u16);
+        registers.write(Register::PC, PC_START);
+        Self {
+            memory: Memory::new(),
+            registers,
         }
     }
-    Ok(())
-}
 
-pub fn mem_read(address: u16, memory: &Vec<u16>) -> u16 {
-    memory[address as usize]
-}
+    pub fn read_image(&mut self, file_path: &str) -> Result<(), String> {
+        let mut file = File::open(file_path).map_err(|e| e.to_string())?;
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
+        for (i, chunk) in buffer.chunks(2).enumerate() {
+            if chunk.len() == 2 {
+                let value = u16::from_be_bytes([chunk[0], chunk[1]]);
+                self.memory.write(i as u16, value);
+            }
+        }
+        Ok(())
+    }
 
-pub fn mem_write(address: u16, value: u16, memory: &mut Vec<u16>) {
-    memory[address as usize] = value;
+    pub fn run(&mut self) {
+        let mut running = true;
+        while running {
+            let pc = self.registers.read(Register::PC);
+            let instr = self.memory.read(pc);
+            self.registers.write(Register::PC, pc.wrapping_add(1));
+            let op = instr >> 12;
+
+            match op {
+                x if x == Opcode::ADD as u16 => {
+                    // Handle ADD
+                }
+                x if x == Opcode::AND as u16 => {
+                    // Handle AND
+                }
+                x if x == Opcode::NOT as u16 => {
+                    // Handle NOT
+                }
+                x if x == Opcode::BR as u16 => {
+                    // Handle BR
+                }
+                x if x == Opcode::JMP as u16 => {
+                    // Handle JMP
+                }
+                x if x == Opcode::JSR as u16 => {
+                    // Handle JSR
+                }
+                x if x == Opcode::LD as u16 => {
+                    // Handle LD
+                }
+                x if x == Opcode::LDI as u16 => {
+                    // Handle LDI
+                }
+                x if x == Opcode::LDR as u16 => {
+                    // Handle LDR
+                }
+                x if x == Opcode::LEA as u16 => {
+                    // Handle LEA
+                }
+                x if x == Opcode::ST as u16 => {
+                    // Handle ST
+                }
+                x if x == Opcode::STI as u16 => {
+                    // Handle STI
+                }
+                x if x == Opcode::STR as u16 => {
+                    // Handle STR
+                }
+                x if x == Opcode::TRAP as u16 => {
+                    // Handle TRAP
+                }
+                x if x == Opcode::RES as u16 || x == Opcode::RTI as u16 => {
+                    // Handle reserved and RTI
+                }
+                _ => {
+                    eprintln!("BAD OPCODE");
+                    running = false;
+                }
+            }
+        }
+    }
 }
