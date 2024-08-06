@@ -1,6 +1,6 @@
 use crate::flags::Flag;
+use crate::instructions::Opcode;
 use crate::memory::Memory;
-use crate::opcodes::Opcode;
 use crate::registers::{Register, Registers};
 use std::fs::File;
 use std::io::Read;
@@ -91,7 +91,7 @@ impl VM {
                     // Handle reserved and RTI
                 }
                 _ => {
-                    eprintln!("BAD OPCODE");
+                    eprintln!("Error: Invalid opcode");
                     running = false;
                 }
             }

@@ -1,6 +1,5 @@
-#[derive(Debug)]
 pub enum Flag {
-    POS = 1 << 0,
-    ZRO = 1 << 1,
-    NEG = 1 << 2,
+    POS = 1 << 0, // P
+    ZRO = 1 << 1, // Z
+    NEG = 1 << 2, // N
 }
