@@ -9,6 +9,7 @@ pub struct VM {
     registers: Registers,
 }
 
+#[allow(clippy::new_without_default)]
 impl VM {
     pub fn new() -> Self {
         Self {

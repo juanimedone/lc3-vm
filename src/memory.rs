@@ -4,6 +4,7 @@ pub struct Memory {
     memory: Vec<u16>,
 }
 
+#[allow(clippy::new_without_default)]
 impl Memory {
     pub fn new() -> Self {
         Self {
