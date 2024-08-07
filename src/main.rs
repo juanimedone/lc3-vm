@@ -12,7 +12,7 @@ fn main() {
     let mut vm = VM::new();
 
     for path in &args[1..] {
-        if let Err(msg) = vm.read_image(path) {
+        if let Err(msg) = vm.read_image_file(path) {
             eprintln!("Error: failed to load image '{}': {}", path, msg);
             exit(1);
         }
