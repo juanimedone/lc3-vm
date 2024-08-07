@@ -1,5 +1,4 @@
-use crate::flags::Flag;
-use crate::instructions::Opcode;
+use crate::instructions::*;
 use crate::memory::Memory;
 use crate::registers::*;
 use std::fs::File;
@@ -32,17 +31,6 @@ impl VM {
         Ok(())
     }
 
-    fn _update_flags(&mut self, reg: Register) {
-        let value = self.registers.read(reg);
-        if value == 0 {
-            self.registers.write(Register::COND, Flag::ZRO as u16);
-        } else if value >> 15 == 1 {
-            self.registers.write(Register::COND, Flag::NEG as u16);
-        } else {
-            self.registers.write(Register::COND, Flag::POS as u16);
-        }
-    }
-
     pub fn run(&mut self) {
         let mut running = true;
         while running {
@@ -53,7 +41,7 @@ impl VM {
 
             match op {
                 x if x == Opcode::ADD as u16 => {
-                    // Handle ADD
+                    add(&mut self.registers, instr);
                 }
                 x if x == Opcode::AND as u16 => {
                     // Handle AND
