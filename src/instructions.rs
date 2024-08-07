@@ -68,7 +68,7 @@ pub fn add(registers: &mut Registers, instr: u16) {
     update_flags(registers, Register::from(r0));
 }
 
-pub fn load(registers: &mut Registers, memory: &Memory, instr: u16) {
+pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let pc = registers.read(Register::PC);
@@ -132,7 +132,7 @@ pub fn and(registers: &mut Registers, instr: u16) {
     update_flags(registers, Register::from(r0));
 }
 
-pub fn load_register(registers: &mut Registers, memory: &Memory, instr: u16) {
+pub fn load_register(registers: &mut Registers, memory: &mut Memory, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let r1 = (instr >> 6) & 0x7;
     let offset = sign_extend(instr & 0x3F, 6);
@@ -165,7 +165,7 @@ pub fn not(registers: &mut Registers, instr: u16) {
     update_flags(registers, Register::from(r0));
 }
 
-pub fn load_indirect(registers: &mut Registers, memory: &Memory, instr: u16) {
+pub fn load_indirect(registers: &mut Registers, memory: &mut Memory, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let pc = registers.read(Register::PC);

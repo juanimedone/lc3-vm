@@ -62,19 +62,19 @@ impl VM {
             match op {
                 x if x == Opcode::BR as u16 => branch(&mut self.registers, instr),
                 x if x == Opcode::ADD as u16 => add(&mut self.registers, instr),
-                x if x == Opcode::LD as u16 => load(&mut self.registers, &self.memory, instr),
+                x if x == Opcode::LD as u16 => load(&mut self.registers, &mut self.memory, instr),
                 x if x == Opcode::ST as u16 => store(&mut self.registers, &mut self.memory, instr),
                 x if x == Opcode::JSR as u16 => jump_to_subroutine(&mut self.registers, instr),
                 x if x == Opcode::AND as u16 => and(&mut self.registers, instr),
                 x if x == Opcode::LDR as u16 => {
-                    load_register(&mut self.registers, &self.memory, instr)
+                    load_register(&mut self.registers, &mut self.memory, instr)
                 }
                 x if x == Opcode::STR as u16 => {
                     store_register(&mut self.registers, &mut self.memory, instr)
                 }
                 x if x == Opcode::NOT as u16 => not(&mut self.registers, instr),
                 x if x == Opcode::LDI as u16 => {
-                    load_indirect(&mut self.registers, &self.memory, instr)
+                    load_indirect(&mut self.registers, &mut self.memory, instr)
                 }
                 x if x == Opcode::STI as u16 => {
                     store_indirect(&mut self.registers, &mut self.memory, instr)
@@ -82,7 +82,7 @@ impl VM {
                 x if x == Opcode::JMP as u16 => jump(&mut self.registers, instr),
                 x if x == Opcode::LEA as u16 => load_effective_address(&mut self.registers, instr),
                 x if x == Opcode::TRAP as u16 => {
-                    traps::execute(&mut self.registers, &self.memory, instr)
+                    traps::execute(&mut self.registers, &mut self.memory, instr)
                 }
                 x if x == Opcode::RTI as u16 || x == Opcode::RES as u16 => {
                     println!("RTI and RES are not implemented")

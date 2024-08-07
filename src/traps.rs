@@ -10,7 +10,7 @@ pub enum Trapcode {
     HALT = 0x25,  // Halt the program
 }
 
-pub fn execute(registers: &mut Registers, memory: &Memory, instr: u16) {
+pub fn execute(registers: &mut Registers, memory: &mut Memory, instr: u16) {
     let pc = registers.read(Register::PC);
     registers.write(Register::R7, pc);
 
