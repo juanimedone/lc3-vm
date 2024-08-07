@@ -39,6 +39,17 @@ fn update_flags(registers: &mut Registers, reg: Register) {
     }
 }
 
+pub fn branch(registers: &mut Registers, instr: u16) {
+    let pc_offset = sign_extend(instr & 0x1FF, 9);
+    let instr_cond = (instr >> 9) & 0x7;
+    let reg_cond = registers.read(Register::COND);
+
+    if (instr_cond & reg_cond) != 0 {
+        let pc = registers.read(Register::PC);
+        registers.write(Register::PC, pc.wrapping_add(pc_offset));
+    }
+}
+
 pub fn add(registers: &mut Registers, instr: u16) {
     let dr = (instr >> 9) & 0x7;
     let sr1 = (instr >> 6) & 0x7;
@@ -57,7 +68,23 @@ pub fn add(registers: &mut Registers, instr: u16) {
     update_flags(registers, Register::from(dr));
 }
 
-pub fn ldi(registers: &mut Registers, memory: &Memory, instr: u16) {
+pub fn and(registers: &mut Registers, instr: u16) {
+    let r0 = (instr >> 9) & 0x7;
+    let r1 = (instr >> 6) & 0x7;
+    let imm_flag = (instr >> 5) & 0x1;
+
+    if imm_flag != 0 {
+        let imm5 = sign_extend(instr & 0x1F, 5);
+        registers.write(Register::from(r0), registers.read(Register::from(r1)) & imm5);
+    } else {
+        let r2 = instr & 0x7;
+        registers.write(Register::from(r0), registers.read(Register::from(r1)) & registers.read(Register::from(r2)));
+    }
+
+    update_flags(registers, Register::from(r0));
+}
+
+pub fn load_indirect(registers: &mut Registers, memory: &Memory, instr: u16) {
     let dr = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
 

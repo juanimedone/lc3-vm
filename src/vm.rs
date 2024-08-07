@@ -38,10 +38,10 @@ impl VM {
             let instr = self.memory.read(pc);
             self.registers.write(Register::PC, pc.wrapping_add(1));
             let op = instr >> 12;
-    
+
             match op {
                 x if x == Opcode::BR as u16 => {
-                    // Handle BR
+                    branch(&mut self.registers, instr);
                 }
                 x if x == Opcode::ADD as u16 => {
                     add(&mut self.registers, instr);
@@ -56,7 +56,7 @@ impl VM {
                     // Handle JSR
                 }
                 x if x == Opcode::AND as u16 => {
-                    // Handle AND
+                    and(&mut self.registers, instr);
                 }
                 x if x == Opcode::LDR as u16 => {
                     // Handle LDR
@@ -64,14 +64,11 @@ impl VM {
                 x if x == Opcode::STR as u16 => {
                     // Handle STR
                 }
-                x if x == Opcode::RTI as u16 => {
-                    // Handle RTI
-                }
                 x if x == Opcode::NOT as u16 => {
                     // Handle NOT
                 }
                 x if x == Opcode::LDI as u16 => {
-                    ldi(&mut self.registers, &self.memory, instr);
+                    load_indirect(&mut self.registers, &self.memory, instr);
                 }
                 x if x == Opcode::STI as u16 => {
                     // Handle STI
@@ -79,14 +76,14 @@ impl VM {
                 x if x == Opcode::JMP as u16 => {
                     // Handle JMP
                 }
-                x if x == Opcode::RES as u16 => {
-                    // Handle RES
-                }
                 x if x == Opcode::LEA as u16 => {
                     // Handle LEA
                 }
                 x if x == Opcode::TRAP as u16 => {
                     // Handle TRAP
+                }
+                x if x == Opcode::RTI as u16 || x == Opcode::RES as u16 => {
+                    println!("RTI and RES are not implemented")
                 }
                 _ => {
                     eprintln!("Error: Invalid opcode");
