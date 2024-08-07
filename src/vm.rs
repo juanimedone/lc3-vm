@@ -1,6 +1,6 @@
-use crate::instructions::*;
 use crate::memory::Memory;
 use crate::registers::*;
+use crate::{instructions::*, traps};
 use std::fs::File;
 use std::io::Read;
 
@@ -62,7 +62,7 @@ impl VM {
                 x if x == Opcode::JMP as u16 => jump(&mut self.registers, instr),
                 x if x == Opcode::LEA as u16 => load_effective_address(&mut self.registers, instr),
                 x if x == Opcode::TRAP as u16 => {
-                    // Handle TRAP
+                    traps::execute(&mut self.registers, &self.memory, instr)
                 }
                 x if x == Opcode::RTI as u16 || x == Opcode::RES as u16 => {
                     println!("RTI and RES are not implemented")
