@@ -1,5 +1,5 @@
-use crate::{memory::Memory, registers::*};
-use std::io::Read;
+use crate::{instructions::update_flags, memory::Memory, registers::*};
+use std::io::{Read, Write};
 
 pub enum Trapcode {
     GETC = 0x20,  // Get character from keyboard, not echoed onto the terminal
@@ -18,58 +18,57 @@ pub fn execute(registers: &mut Registers, memory: &Memory, instr: u16) {
         x if x == Trapcode::GETC as u16 => {
             let ch = std::io::stdin().bytes().next().unwrap().unwrap() as u16;
             registers.write(Register::R0, ch);
+            update_flags(registers, Register::R0);
         }
         x if x == Trapcode::OUT as u16 => {
             let ch = registers.read(Register::R0);
             print!("{}", ch as u8 as char);
+            std::io::stdout().flush().unwrap();
         }
         x if x == Trapcode::PUTS as u16 => {
             let mut address = registers.read(Register::R0);
             loop {
                 let word = memory.read(address);
-                let high_byte = (word >> 8) as u8;
-                let low_byte = (word & 0xFF) as u8;
-
-                if high_byte == 0 {
-                    if low_byte == 0 {
-                        break;
-                    }
-                    print!("{}", low_byte as char);
-                } else {
-                    print!("{}", high_byte as char);
-                    if low_byte != 0 {
-                        print!("{}", low_byte as char);
-                    }
+                if word == 0 {
+                    break;
                 }
+                print!("{}", word as u8 as char);
                 address += 1;
             }
+            std::io::stdout().flush().unwrap();
         }
         x if x == Trapcode::IN as u16 => {
+            print!("Enter a character: ");
+            std::io::stdout().flush().unwrap();
             let ch = std::io::stdin().bytes().next().unwrap().unwrap() as u16;
+            print!("{}", ch as u8 as char);
+            std::io::stdout().flush().unwrap();
             registers.write(Register::R0, ch);
+            update_flags(registers, Register::R0);
         }
         x if x == Trapcode::PUTSP as u16 => {
             let mut address = registers.read(Register::R0);
             loop {
                 let word = memory.read(address);
-                let byte1 = (word & 0xFF) as u8;
-                let byte2 = ((word >> 8) & 0xFF) as u8;
+                let char1 = (word & 0xFF) as u8 as char;
+                let char2 = (word >> 8) as u8 as char;
 
-                if byte1 == 0 && byte2 == 0 {
+                if char1 == '\0' {
                     break;
                 }
-                if byte1 != 0 {
-                    print!("{}", byte1 as char);
-                }
-                if byte2 != 0 {
-                    print!("{}", byte2 as char);
+                print!("{}", char1);
+
+                if char2 != '\0' {
+                    print!("{}", char2);
                 }
 
                 address += 1;
             }
+            std::io::stdout().flush().unwrap();
         }
         x if x == Trapcode::HALT as u16 => {
             println!("Program halted");
+            std::io::stdout().flush().unwrap();
             std::process::exit(0);
         }
         _ => {

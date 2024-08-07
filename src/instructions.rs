@@ -27,7 +27,7 @@ fn sign_extend(x: u16, bit_count: usize) -> u16 {
     }
 }
 
-fn update_flags(registers: &mut Registers, reg: Register) {
+pub fn update_flags(registers: &mut Registers, reg: Register) {
     let value = registers.read(reg);
     if value == 0 {
         registers.write(Register::COND, Flag::ZRO as u16);
