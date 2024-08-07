@@ -38,52 +38,55 @@ impl VM {
             let instr = self.memory.read(pc);
             self.registers.write(Register::PC, pc.wrapping_add(1));
             let op = instr >> 12;
-
+    
             match op {
-                x if x == Opcode::ADD as u16 => {
-                    add(&mut self.registers, instr);
-                }
-                x if x == Opcode::AND as u16 => {
-                    // Handle AND
-                }
-                x if x == Opcode::NOT as u16 => {
-                    // Handle NOT
-                }
                 x if x == Opcode::BR as u16 => {
                     // Handle BR
                 }
-                x if x == Opcode::JMP as u16 => {
-                    // Handle JMP
-                }
-                x if x == Opcode::JSR as u16 => {
-                    // Handle JSR
+                x if x == Opcode::ADD as u16 => {
+                    add(&mut self.registers, instr);
                 }
                 x if x == Opcode::LD as u16 => {
                     // Handle LD
                 }
-                x if x == Opcode::LDI as u16 => {
-                    // Handle LDI
+                x if x == Opcode::ST as u16 => {
+                    // Handle ST
+                }
+                x if x == Opcode::JSR as u16 => {
+                    // Handle JSR
+                }
+                x if x == Opcode::AND as u16 => {
+                    // Handle AND
                 }
                 x if x == Opcode::LDR as u16 => {
                     // Handle LDR
                 }
-                x if x == Opcode::LEA as u16 => {
-                    // Handle LEA
+                x if x == Opcode::STR as u16 => {
+                    // Handle STR
                 }
-                x if x == Opcode::ST as u16 => {
-                    // Handle ST
+                x if x == Opcode::RTI as u16 => {
+                    // Handle RTI
+                }
+                x if x == Opcode::NOT as u16 => {
+                    // Handle NOT
+                }
+                x if x == Opcode::LDI as u16 => {
+                    ldi(&mut self.registers, &self.memory, instr);
                 }
                 x if x == Opcode::STI as u16 => {
                     // Handle STI
                 }
-                x if x == Opcode::STR as u16 => {
-                    // Handle STR
+                x if x == Opcode::JMP as u16 => {
+                    // Handle JMP
+                }
+                x if x == Opcode::RES as u16 => {
+                    // Handle RES
+                }
+                x if x == Opcode::LEA as u16 => {
+                    // Handle LEA
                 }
                 x if x == Opcode::TRAP as u16 => {
                     // Handle TRAP
-                }
-                x if x == Opcode::RES as u16 || x == Opcode::RTI as u16 => {
-                    // Handle reserved and RTI
                 }
                 _ => {
                     eprintln!("Error: Invalid opcode");

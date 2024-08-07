@@ -1,4 +1,4 @@
-use crate::{flags::Flag, registers::*};
+use crate::{flags::Flag, memory::Memory, registers::*};
 
 pub enum Opcode {
     BR = 0, // branch
@@ -53,6 +53,19 @@ pub fn add(registers: &mut Registers, instr: u16) {
         let result = registers.read(Register::from(sr1)) + registers.read(Register::from(r2));
         registers.write(Register::from(dr), result);
     }
+
+    update_flags(registers, Register::from(dr));
+}
+
+pub fn ldi(registers: &mut Registers, memory: &Memory, instr: u16) {
+    let dr = (instr >> 9) & 0x7;
+    let pc_offset = sign_extend(instr & 0x1FF, 9);
+
+    let pc = registers.read(Register::PC);
+    let final_address = memory.read(pc.wrapping_add(pc_offset));
+    let value = memory.read(final_address);
+
+    registers.write(Register::from(dr), value);
 
     update_flags(registers, Register::from(dr));
 }
