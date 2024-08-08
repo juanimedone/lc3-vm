@@ -34,11 +34,11 @@ impl From<u16> for Register {
     }
 }
 
+#[derive(Default)]
 pub struct Registers {
     registers: Vec<u16>,
 }
 
-#[allow(clippy::new_without_default)]
 impl Registers {
     pub fn new() -> Self {
         let mut registers = vec![0; Register::COUNT as usize];

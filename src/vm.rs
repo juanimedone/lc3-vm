@@ -4,12 +4,12 @@ use crate::{instructions::*, traps};
 use std::fs::File;
 use std::io::Read;
 
+#[derive(Default)]
 pub struct VM {
     memory: Memory,
     registers: Registers,
 }
 
-#[allow(clippy::new_without_default)]
 impl VM {
     pub fn new() -> Self {
         Self {

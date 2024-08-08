@@ -7,11 +7,11 @@ pub enum MemoryMappedRegister {
     KBDR = 0xFE02, // Keyboard data register
 }
 
+#[derive(Default)]
 pub struct Memory {
     memory: Vec<u16>,
 }
 
-#[allow(clippy::new_without_default)]
 impl Memory {
     pub fn new() -> Self {
         Self {
