@@ -59,6 +59,11 @@ impl VM {
             self.registers.write(Register::PC, pc.wrapping_add(1));
             let op = instr >> 12;
 
+            println!(
+                "PC: {:#04X}, Instruction: {:#04X}, Opcode: {:#01X}",
+                pc, instr, op
+            );
+
             match op {
                 x if x == Opcode::BR as u16 => branch(&mut self.registers, instr),
                 x if x == Opcode::ADD as u16 => add(&mut self.registers, instr),
