@@ -17,7 +17,6 @@ pub fn restore_input_buffering(original_tio: &Termios) -> io::Result<()> {
     tcsetattr(STDIN_FD, TCSANOW, original_tio)
 }
 
-// Checks if a key has been pressed
 pub fn check_key() -> bool {
     let mut read_fds = unsafe { std::mem::zeroed() };
     unsafe { FD_ZERO(&mut read_fds) };

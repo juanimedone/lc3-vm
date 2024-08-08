@@ -1,4 +1,4 @@
-use std::io::Read;
+use crate::utils::{check_key, getchar};
 
 pub const MEMORY_SIZE: usize = 1 << 16; // 128 KB of memory (2^16 = 65536 locations of 16 bits each)
 
@@ -23,7 +23,7 @@ impl Memory {
         if address == MemoryMappedRegister::KBSR as u16 {
             if check_key() {
                 self.memory[address as usize] = 1 << 15; // Set the ready bit
-                self.memory[MemoryMappedRegister::KBDR as usize] = getchar();
+                self.memory[MemoryMappedRegister::KBDR as usize] = getchar().unwrap();
             } else {
                 self.memory[address as usize] = 0; // Clear the ready bit
             }
@@ -36,18 +36,4 @@ impl Memory {
     pub fn write(&mut self, address: u16, value: u16) {
         self.memory[address as usize] = value;
     }
-}
-
-// Function to check if a key is pressed (mock implementation)
-fn check_key() -> bool {
-    todo!()
-}
-
-// Function to get a character from the keyboard
-fn getchar() -> u16 {
-    let mut buffer = [0u8; 1];
-    std::io::stdin()
-        .read_exact(&mut buffer)
-        .expect("Failed to read input");
-    buffer[0] as u16
 }
