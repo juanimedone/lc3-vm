@@ -1,4 +1,4 @@
-use crate::{flags::Flag, memory::Memory, registers::*};
+use crate::{flags::Flag, memory::Memory, registers::*, utils::sign_extend};
 
 pub enum Opcode {
     BR = 0, // branch
@@ -17,14 +17,6 @@ pub enum Opcode {
     RES,    // reserved (unused)
     LEA,    // load effective address
     TRAP,   // execute trap
-}
-
-fn sign_extend(x: u16, bit_count: usize) -> u16 {
-    if (x >> (bit_count - 1)) & 1 != 0 {
-        x | (0xFFFF << bit_count)
-    } else {
-        x
-    }
 }
 
 pub fn update_flags(registers: &mut Registers, reg: Register) {

@@ -46,3 +46,11 @@ pub fn getchar() -> io::Result<u16> {
     io::stdin().read_exact(&mut buffer)?;
     Ok(buffer[0] as u16)
 }
+
+pub fn sign_extend(x: u16, bit_count: usize) -> u16 {
+    if (x >> (bit_count - 1)) & 1 != 0 {
+        x | (0xFFFF << bit_count)
+    } else {
+        x
+    }
+}
