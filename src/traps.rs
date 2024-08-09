@@ -1,4 +1,4 @@
-use crate::{instructions::update_flags, memory::Memory, registers::*};
+use crate::{memory::Memory, registers::*};
 use std::io::{Read, Write};
 
 pub enum Trapcode {
@@ -18,7 +18,7 @@ pub fn execute(registers: &mut Registers, memory: &mut Memory, instr: u16) {
         x if x == Trapcode::GETC as u16 => {
             let ch = std::io::stdin().bytes().next().unwrap().unwrap() as u16;
             registers.write(Register::R0, ch);
-            update_flags(registers, Register::R0);
+            registers.update_flags(Register::R0);
         }
         x if x == Trapcode::OUT as u16 => {
             let ch = registers.read(Register::R0);
@@ -44,7 +44,7 @@ pub fn execute(registers: &mut Registers, memory: &mut Memory, instr: u16) {
             print!("{}", ch as u8 as char);
             std::io::stdout().flush().unwrap();
             registers.write(Register::R0, ch);
-            update_flags(registers, Register::R0);
+            registers.update_flags(Register::R0);
         }
         x if x == Trapcode::PUTSP as u16 => {
             let mut address = registers.read(Register::R0);

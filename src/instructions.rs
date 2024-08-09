@@ -1,4 +1,4 @@
-use crate::{flags::Flag, memory::Memory, registers::*, utils::sign_extend};
+use crate::{memory::Memory, registers::*, utils::sign_extend};
 
 pub enum Opcode {
     BR = 0, // branch
@@ -17,18 +17,6 @@ pub enum Opcode {
     RES,    // reserved (unused)
     LEA,    // load effective address
     TRAP,   // execute trap
-}
-
-pub fn update_flags(registers: &mut Registers, reg: Register) {
-    let value = registers.read(reg);
-    if value == 0 {
-        registers.write(Register::COND, Flag::ZRO as u16);
-    } else if value >> 15 == 1 {
-        // a 1 in the left-most bit indicates negative
-        registers.write(Register::COND, Flag::NEG as u16);
-    } else {
-        registers.write(Register::COND, Flag::POS as u16);
-    }
 }
 
 pub fn branch(registers: &mut Registers, instr: u16) {
@@ -59,7 +47,7 @@ pub fn add(registers: &mut Registers, instr: u16) {
         registers.write(Register::from(r0), result);
     }
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
 pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -71,7 +59,7 @@ pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) {
     let value = memory.read(address);
     registers.write(Register::from(r0), value);
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
 pub fn store(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -123,7 +111,7 @@ pub fn and(registers: &mut Registers, instr: u16) {
         );
     }
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
 pub fn load_register(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -136,7 +124,7 @@ pub fn load_register(registers: &mut Registers, memory: &mut Memory, instr: u16)
     let value = memory.read(final_address);
     registers.write(Register::from(r0), value);
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
 pub fn store_register(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -156,7 +144,7 @@ pub fn not(registers: &mut Registers, instr: u16) {
 
     registers.write(Register::from(r0), !registers.read(Register::from(r1)));
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
 pub fn load_indirect(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -168,7 +156,7 @@ pub fn load_indirect(registers: &mut Registers, memory: &mut Memory, instr: u16)
     let value = memory.read(address);
     registers.write(Register::from(r0), value);
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
 pub fn store_indirect(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -195,5 +183,5 @@ pub fn load_effective_address(registers: &mut Registers, instr: u16) {
     let effective_address = pc.wrapping_add(pc_offset);
     registers.write(Register::from(r0), effective_address);
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }

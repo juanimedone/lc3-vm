@@ -55,4 +55,16 @@ impl Registers {
     pub fn write(&mut self, reg: Register, value: u16) {
         self.registers[reg as usize] = value;
     }
+
+    pub fn update_flags(&mut self, reg: Register) {
+        let value = self.read(reg);
+        if value == 0 {
+            self.write(Register::COND, Flag::ZRO as u16);
+        } else if value >> 15 == 1 {
+            // a 1 in the left-most bit indicates negative
+            self.write(Register::COND, Flag::NEG as u16);
+        } else {
+            self.write(Register::COND, Flag::POS as u16);
+        }
+    }
 }
