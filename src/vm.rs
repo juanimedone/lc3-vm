@@ -28,7 +28,6 @@ impl VM {
         let max_read = MEMORY_SIZE - origin as usize;
         let mut buffer = vec![0u16; max_read];
         let mut byte_buffer = vec![0u8; max_read * 2];
-
         let read = file.read(&mut byte_buffer).map_err(|e| e.to_string())?;
         let read_u16_count = read / 2;
 
@@ -52,39 +51,27 @@ impl VM {
             let pc = self.registers.read(Register::PC);
             let instr = self.memory.read(pc);
             self.registers.write(Register::PC, pc.wrapping_add(1));
-            let op = instr >> 12;
+            let op = Opcode::from(instr >> 12);
 
             match op {
-                x if x == Opcode::BR as u16 => branch(&mut self.registers, instr),
-                x if x == Opcode::ADD as u16 => add(&mut self.registers, instr),
-                x if x == Opcode::LD as u16 => load(&mut self.registers, &mut self.memory, instr),
-                x if x == Opcode::ST as u16 => store(&mut self.registers, &mut self.memory, instr),
-                x if x == Opcode::JSR as u16 => jump_to_subroutine(&mut self.registers, instr),
-                x if x == Opcode::AND as u16 => and(&mut self.registers, instr),
-                x if x == Opcode::LDR as u16 => {
-                    load_register(&mut self.registers, &mut self.memory, instr)
+                Opcode::BR => branch(&mut self.registers, instr),
+                Opcode::ADD => add(&mut self.registers, instr),
+                Opcode::LD => load(&mut self.registers, &mut self.memory, instr),
+                Opcode::ST => store(&mut self.registers, &mut self.memory, instr),
+                Opcode::JSR => jump_to_subroutine(&mut self.registers, instr),
+                Opcode::AND => and(&mut self.registers, instr),
+                Opcode::LDR => load_register(&mut self.registers, &mut self.memory, instr),
+                Opcode::STR => store_register(&mut self.registers, &mut self.memory, instr),
+                Opcode::NOT => not(&mut self.registers, instr),
+                Opcode::LDI => load_indirect(&mut self.registers, &mut self.memory, instr),
+                Opcode::STI => store_indirect(&mut self.registers, &mut self.memory, instr),
+                Opcode::JMP => jump(&mut self.registers, instr),
+                Opcode::LEA => load_effective_address(&mut self.registers, instr),
+                Opcode::TRAP => {
+                    traps::execute(&mut self.registers, &mut self.memory, instr, &mut running)
                 }
-                x if x == Opcode::STR as u16 => {
-                    store_register(&mut self.registers, &mut self.memory, instr)
-                }
-                x if x == Opcode::NOT as u16 => not(&mut self.registers, instr),
-                x if x == Opcode::LDI as u16 => {
-                    load_indirect(&mut self.registers, &mut self.memory, instr)
-                }
-                x if x == Opcode::STI as u16 => {
-                    store_indirect(&mut self.registers, &mut self.memory, instr)
-                }
-                x if x == Opcode::JMP as u16 => jump(&mut self.registers, instr),
-                x if x == Opcode::LEA as u16 => load_effective_address(&mut self.registers, instr),
-                x if x == Opcode::TRAP as u16 => {
-                    traps::execute(&mut self.registers, &mut self.memory, instr)
-                }
-                x if x == Opcode::RTI as u16 || x == Opcode::RES as u16 => {
-                    println!("RTI and RES are not implemented")
-                }
-                _ => {
-                    eprintln!("Error: Invalid opcode");
-                    running = false;
+                Opcode::RTI | Opcode::RES => {
+                    println!("RTI and RES are not implemented");
                 }
             }
         }

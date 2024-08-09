@@ -10,7 +10,7 @@ pub enum Trapcode {
     HALT = 0x25,  // Halt the program
 }
 
-pub fn execute(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn execute(registers: &mut Registers, memory: &mut Memory, instr: u16, running: &mut bool) {
     let pc = registers.read(Register::PC);
     registers.write(Register::R7, pc);
 
@@ -69,7 +69,7 @@ pub fn execute(registers: &mut Registers, memory: &mut Memory, instr: u16) {
         x if x == Trapcode::HALT as u16 => {
             println!("Program halted");
             std::io::stdout().flush().unwrap();
-            std::process::exit(0);
+            *running = false
         }
         _ => {
             panic!("Unknown trap code: {:#04X}", instr & 0xFF);

@@ -19,6 +19,30 @@ pub enum Opcode {
     TRAP,   // execute trap
 }
 
+impl From<u16> for Opcode {
+    fn from(value: u16) -> Self {
+        match value {
+            0 => Opcode::BR,
+            1 => Opcode::ADD,
+            2 => Opcode::LD,
+            3 => Opcode::ST,
+            4 => Opcode::JSR,
+            5 => Opcode::AND,
+            6 => Opcode::LDR,
+            7 => Opcode::STR,
+            8 => Opcode::RTI,
+            9 => Opcode::NOT,
+            10 => Opcode::LDI,
+            11 => Opcode::STI,
+            12 => Opcode::JMP,
+            13 => Opcode::RES,
+            14 => Opcode::LEA,
+            15 => Opcode::TRAP,
+            _ => panic!("Invalid opcode value"),
+        }
+    }
+}
+
 pub fn branch(registers: &mut Registers, instr: u16) {
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let instr_cond = (instr >> 9) & 0x7;

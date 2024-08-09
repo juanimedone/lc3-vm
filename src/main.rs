@@ -29,7 +29,6 @@ fn main() {
             exit(1);
         }
     }
-
     vm.run();
 
     if let Err(e) = restore_input_buffering(&original_tio) {

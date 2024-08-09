@@ -3,7 +3,7 @@ use std::io::{self, Read};
 use std::os::unix::io::RawFd;
 use termios::{tcsetattr, Termios, ECHO, ICANON, TCSANOW};
 
-const STDIN_FD: RawFd = 0; // File descriptor for standard input (stdin)
+const STDIN_FD: RawFd = 0; // File descriptor for standard input
 
 pub fn disable_input_buffering() -> io::Result<Termios> {
     let original_tio = Termios::from_fd(STDIN_FD)?;
