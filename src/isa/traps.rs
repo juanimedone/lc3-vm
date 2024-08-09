@@ -34,69 +34,84 @@ pub fn execute(
     registers.write(Register::R7, pc);
 
     match Trapcode::from(instr & 0xFF) {
-        Trapcode::GETC => {
-            let ch = io::stdin()
-                .bytes()
-                .next()
-                .ok_or("Failed to read byte")?
-                .map_err(|e| e.to_string())? as u16;
-            registers.write(Register::R0, ch);
-            registers.update_flags(Register::R0);
-        }
-        Trapcode::OUT => {
-            let ch = registers.read(Register::R0);
-            print!("{}", ch as u8 as char);
-            io::stdout().flush().map_err(|e| e.to_string())?;
-        }
-        Trapcode::PUTS => {
-            let mut address = registers.read(Register::R0);
-            loop {
-                let word = memory.read(address)?;
-                if word == 0 {
-                    break;
-                }
-                print!("{}", word as u8 as char);
-                address += 1;
-            }
-            io::stdout().flush().map_err(|e| e.to_string())?;
-        }
-        Trapcode::IN => {
-            print!("Enter a character: ");
-            io::stdout().flush().map_err(|e| e.to_string())?;
-            let ch = io::stdin()
-                .bytes()
-                .next()
-                .ok_or("Failed to read byte")?
-                .map_err(|e| e.to_string())? as u16;
-            print!("{}", ch as u8 as char);
-            io::stdout().flush().map_err(|e| e.to_string())?;
-            registers.write(Register::R0, ch);
-            registers.update_flags(Register::R0);
-        }
-        Trapcode::PUTSP => {
-            let mut address = registers.read(Register::R0);
-            loop {
-                let word = memory.read(address)?;
-                let char1 = (word & 0xFF) as u8 as char;
-                let char2 = (word >> 8) as u8 as char;
-
-                if char1 == '\0' {
-                    break;
-                }
-                print!("{}", char1);
-                if char2 != '\0' {
-                    print!("{}", char2);
-                }
-
-                address += 1;
-            }
-            io::stdout().flush().map_err(|e| e.to_string())?;
-        }
-        Trapcode::HALT => {
-            println!("Program halted");
-            io::stdout().flush().map_err(|e| e.to_string())?;
-            *running = false
-        }
+        Trapcode::GETC => getc(registers)?,
+        Trapcode::OUT => out(registers)?,
+        Trapcode::PUTS => puts(registers, memory)?,
+        Trapcode::IN => in_(registers)?,
+        Trapcode::PUTSP => putsp(registers, memory)?,
+        Trapcode::HALT => halt(running)?,
     }
+    Ok(())
+}
+
+fn getc(registers: &mut Registers) -> Result<(), String> {
+    let ch = io::stdin()
+        .bytes()
+        .next()
+        .ok_or("Failed to read byte")?
+        .map_err(|e| e.to_string())? as u16;
+    registers.write(Register::R0, ch);
+    registers.update_flags(Register::R0);
+    Ok(())
+}
+
+fn out(registers: &Registers) -> Result<(), String> {
+    let ch = registers.read(Register::R0);
+    print!("{}", ch as u8 as char);
+    io::stdout().flush().map_err(|e| e.to_string())
+}
+
+fn puts(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
+    let mut address = registers.read(Register::R0);
+    loop {
+        let word = memory.read(address)?;
+        if word == 0 {
+            break;
+        }
+        print!("{}", word as u8 as char);
+        address += 1;
+    }
+    io::stdout().flush().map_err(|e| e.to_string())
+}
+
+fn in_(registers: &mut Registers) -> Result<(), String> {
+    print!("Enter a character: ");
+    io::stdout().flush().map_err(|e| e.to_string())?;
+    let ch = io::stdin()
+        .bytes()
+        .next()
+        .ok_or("Failed to read byte")?
+        .map_err(|e| e.to_string())? as u16;
+    print!("{}", ch as u8 as char);
+    io::stdout().flush().map_err(|e| e.to_string())?;
+    registers.write(Register::R0, ch);
+    registers.update_flags(Register::R0);
+    Ok(())
+}
+
+fn putsp(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
+    let mut address = registers.read(Register::R0);
+    loop {
+        let word = memory.read(address)?;
+        let char1 = (word & 0xFF) as u8 as char;
+        let char2 = (word >> 8) as u8 as char;
+
+        if char1 == '\0' {
+            break;
+        }
+        print!("{}", char1);
+        if char2 != '\0' {
+            print!("{}", char2);
+        }
+
+        address += 1;
+    }
+    io::stdout().flush().map_err(|e| e.to_string())
+}
+
+fn halt(running: &mut bool) -> Result<(), String> {
+    println!("Program halted");
+    io::stdout().flush().map_err(|e| e.to_string())?;
+    *running = false;
     Ok(())
 }
