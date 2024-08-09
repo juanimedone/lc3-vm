@@ -1,4 +1,4 @@
-use crate::{memory::Memory, registers::*};
+use crate::hardware::{memory::Memory, registers::*};
 use std::io::{Read, Write};
 
 pub enum Trapcode {

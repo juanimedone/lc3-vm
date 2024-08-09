@@ -1,4 +1,4 @@
-use crate::{memory::Memory, registers::*, utils::sign_extend};
+use crate::{hardware::memory::Memory, hardware::registers::*, utils::sign_extend};
 
 pub enum Opcode {
     BR = 0, // branch

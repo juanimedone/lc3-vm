@@ -1,4 +1,4 @@
-use crate::flags::Flag;
+use crate::hardware::flags::Flag;
 
 pub const PC_START: u16 = 0x3000; // default starting position
 

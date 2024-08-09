@@ -1,6 +1,6 @@
+use crate::hardware::memory::{Memory, MEMORY_SIZE};
+use crate::hardware::registers::*;
 use crate::isa::{instructions::*, traps};
-use crate::memory::{Memory, MEMORY_SIZE};
-use crate::registers::*;
 use std::fs::File;
 use std::io::Read;
 
