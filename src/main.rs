@@ -6,7 +6,7 @@ use std::process::exit;
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: cargo run [image-file1] ...");
+        eprintln!("Usage: cargo run [object-file1] ...");
         exit(2);
     }
 
