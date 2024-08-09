@@ -30,7 +30,7 @@ fn main() {
         }
     }
     if let Err(e) = vm.run() {
-        eprintln!("Error while running the vm: {}", e)
+        eprintln!("Error while running the VM: {}", e)
     }
 
     if let Err(e) = restore_input_buffering(&original_tio) {

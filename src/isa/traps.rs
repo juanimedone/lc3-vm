@@ -10,6 +10,20 @@ pub enum Trapcode {
     HALT = 0x25,  // Halt the program
 }
 
+impl From<u16> for Trapcode {
+    fn from(value: u16) -> Self {
+        match value {
+            0x20 => Trapcode::GETC,
+            0x21 => Trapcode::OUT,
+            0x22 => Trapcode::PUTS,
+            0x23 => Trapcode::IN,
+            0x24 => Trapcode::PUTSP,
+            0x25 => Trapcode::HALT,
+            _ => panic!("Invalid trap code value"),
+        }
+    }
+}
+
 pub fn execute(
     registers: &mut Registers,
     memory: &mut Memory,
@@ -19,8 +33,8 @@ pub fn execute(
     let pc = registers.read(Register::PC);
     registers.write(Register::R7, pc);
 
-    match instr & 0xFF {
-        x if x == Trapcode::GETC as u16 => {
+    match Trapcode::from(instr & 0xFF) {
+        Trapcode::GETC => {
             let ch = io::stdin()
                 .bytes()
                 .next()
@@ -29,12 +43,12 @@ pub fn execute(
             registers.write(Register::R0, ch);
             registers.update_flags(Register::R0);
         }
-        x if x == Trapcode::OUT as u16 => {
+        Trapcode::OUT => {
             let ch = registers.read(Register::R0);
             print!("{}", ch as u8 as char);
             io::stdout().flush().map_err(|e| e.to_string())?;
         }
-        x if x == Trapcode::PUTS as u16 => {
+        Trapcode::PUTS => {
             let mut address = registers.read(Register::R0);
             loop {
                 let word = memory.read(address)?;
@@ -46,7 +60,7 @@ pub fn execute(
             }
             io::stdout().flush().map_err(|e| e.to_string())?;
         }
-        x if x == Trapcode::IN as u16 => {
+        Trapcode::IN => {
             print!("Enter a character: ");
             io::stdout().flush().map_err(|e| e.to_string())?;
             let ch = io::stdin()
@@ -59,7 +73,7 @@ pub fn execute(
             registers.write(Register::R0, ch);
             registers.update_flags(Register::R0);
         }
-        x if x == Trapcode::PUTSP as u16 => {
+        Trapcode::PUTSP => {
             let mut address = registers.read(Register::R0);
             loop {
                 let word = memory.read(address)?;
@@ -70,7 +84,6 @@ pub fn execute(
                     break;
                 }
                 print!("{}", char1);
-
                 if char2 != '\0' {
                     print!("{}", char2);
                 }
@@ -79,13 +92,10 @@ pub fn execute(
             }
             io::stdout().flush().map_err(|e| e.to_string())?;
         }
-        x if x == Trapcode::HALT as u16 => {
+        Trapcode::HALT => {
             println!("Program halted");
             io::stdout().flush().map_err(|e| e.to_string())?;
             *running = false
-        }
-        _ => {
-            return Err(format!("Unknown trap code: {:#04X}", instr & 0xFF));
         }
     }
     Ok(())
