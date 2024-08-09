@@ -49,11 +49,13 @@ pub fn add(registers: &mut Registers, instr: u16) {
 
     if imm_flag == 1 {
         let imm5 = sign_extend(instr & 0x1F, 5);
-        let result = registers.read(Register::from(r1)) + imm5;
+        let result = registers.read(Register::from(r1)).wrapping_add(imm5);
         registers.write(Register::from(r0), result);
     } else {
         let r2 = instr & 0x7;
-        let result = registers.read(Register::from(r1)) + registers.read(Register::from(r2));
+        let result = registers
+            .read(Register::from(r1))
+            .wrapping_add(registers.read(Register::from(r2)));
         registers.write(Register::from(r0), result);
     }
 

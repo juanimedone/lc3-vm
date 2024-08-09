@@ -18,17 +18,12 @@ impl VM {
         }
     }
 
-    fn swap16(x: u16) -> u16 {
-        ((x & 0xFF) << 8) | ((x >> 8) & 0xFF)
-    }
-
     pub fn read_image_file(&mut self, path: &str) -> Result<(), String> {
         let mut file = File::open(path).map_err(|e| e.to_string())?;
         let mut origin_bytes = [0u8; 2];
         file.read_exact(&mut origin_bytes)
             .map_err(|e| e.to_string())?;
-        let mut origin = u16::from_be_bytes(origin_bytes);
-        origin = Self::swap16(origin);
+        let origin = u16::from_be_bytes(origin_bytes);
 
         let max_read = MEMORY_SIZE - origin as usize;
         let mut buffer = vec![0u16; max_read];
@@ -41,7 +36,7 @@ impl VM {
             let byte1 = byte_buffer[i * 2];
             let byte2 = byte_buffer[i * 2 + 1];
             let value = u16::from_be_bytes([byte1, byte2]);
-            buffer[i] = Self::swap16(value);
+            buffer[i] = value;
         }
 
         for (i, value) in buffer.iter().take(read_u16_count).enumerate() {
@@ -58,11 +53,6 @@ impl VM {
             let instr = self.memory.read(pc);
             self.registers.write(Register::PC, pc.wrapping_add(1));
             let op = instr >> 12;
-
-            println!(
-                "PC: {:#04X}, Instruction: {:#04X}, Opcode: {:#01X}",
-                pc, instr, op
-            );
 
             match op {
                 x if x == Opcode::BR as u16 => branch(&mut self.registers, instr),
