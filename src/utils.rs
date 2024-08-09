@@ -41,9 +41,11 @@ pub fn check_key() -> bool {
 }
 
 // Reads a single character from stdin
-pub fn getchar() -> io::Result<u16> {
+pub fn getchar() -> Result<u16, String> {
     let mut buffer = [0u8; 1];
-    io::stdin().read_exact(&mut buffer)?;
+    io::stdin()
+        .read_exact(&mut buffer)
+        .map_err(|e| e.to_string())?;
     Ok(buffer[0] as u16)
 }
 

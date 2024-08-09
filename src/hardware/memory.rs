@@ -19,17 +19,17 @@ impl Memory {
         }
     }
 
-    pub fn read(&mut self, address: u16) -> u16 {
+    pub fn read(&mut self, address: u16) -> Result<u16, String> {
         if address == MemoryMappedRegister::KBSR as u16 {
             if check_key() {
                 self.memory[address as usize] = 1 << 15; // Set the ready bit
-                self.memory[MemoryMappedRegister::KBDR as usize] = getchar().unwrap();
+                self.memory[MemoryMappedRegister::KBDR as usize] = getchar()?;
             } else {
                 self.memory[address as usize] = 0; // Clear the ready bit
             }
-            self.memory[address as usize]
+            Ok(self.memory[address as usize])
         } else {
-            self.memory[address as usize]
+            Ok(self.memory[address as usize])
         }
     }
 

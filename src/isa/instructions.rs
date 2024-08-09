@@ -74,16 +74,17 @@ pub fn add(registers: &mut Registers, instr: u16) {
     registers.update_flags(Register::from(r0));
 }
 
-pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let pc = registers.read(Register::PC);
 
     let address = pc.wrapping_add(pc_offset);
-    let value = memory.read(address);
+    let value = memory.read(address)?;
     registers.write(Register::from(r0), value);
 
     registers.update_flags(Register::from(r0));
+    Ok(())
 }
 
 pub fn store(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -138,17 +139,22 @@ pub fn and(registers: &mut Registers, instr: u16) {
     registers.update_flags(Register::from(r0));
 }
 
-pub fn load_register(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn load_register(
+    registers: &mut Registers,
+    memory: &mut Memory,
+    instr: u16,
+) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let r1 = (instr >> 6) & 0x7;
     let offset = sign_extend(instr & 0x3F, 6);
 
     let base_address = registers.read(Register::from(r1));
     let final_address = base_address.wrapping_add(offset);
-    let value = memory.read(final_address);
+    let value = memory.read(final_address)?;
     registers.write(Register::from(r0), value);
 
     registers.update_flags(Register::from(r0));
+    Ok(())
 }
 
 pub fn store_register(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -171,27 +177,37 @@ pub fn not(registers: &mut Registers, instr: u16) {
     registers.update_flags(Register::from(r0));
 }
 
-pub fn load_indirect(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn load_indirect(
+    registers: &mut Registers,
+    memory: &mut Memory,
+    instr: u16,
+) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let pc = registers.read(Register::PC);
 
-    let address = memory.read(pc.wrapping_add(pc_offset));
-    let value = memory.read(address);
+    let address = memory.read(pc.wrapping_add(pc_offset))?;
+    let value = memory.read(address)?;
     registers.write(Register::from(r0), value);
 
     registers.update_flags(Register::from(r0));
+    Ok(())
 }
 
-pub fn store_indirect(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn store_indirect(
+    registers: &mut Registers,
+    memory: &mut Memory,
+    instr: u16,
+) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let pc = registers.read(Register::PC);
 
     let intermediate_address = pc.wrapping_add(pc_offset);
-    let final_address = memory.read(intermediate_address);
+    let final_address = memory.read(intermediate_address)?;
     let value = registers.read(Register::from(r0));
     memory.write(final_address, value);
+    Ok(())
 }
 
 pub fn jump(registers: &mut Registers, instr: u16) {

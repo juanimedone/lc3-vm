@@ -45,35 +45,35 @@ impl VM {
         Ok(())
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), String> {
         let mut running = true;
         while running {
             let pc = self.registers.read(Register::PC);
-            let instr = self.memory.read(pc);
+            let instr = self.memory.read(pc)?;
             self.registers.write(Register::PC, pc.wrapping_add(1));
             let op = Opcode::from(instr >> 12);
-
             match op {
                 Opcode::BR => branch(&mut self.registers, instr),
                 Opcode::ADD => add(&mut self.registers, instr),
-                Opcode::LD => load(&mut self.registers, &mut self.memory, instr),
+                Opcode::LD => load(&mut self.registers, &mut self.memory, instr)?,
                 Opcode::ST => store(&mut self.registers, &mut self.memory, instr),
                 Opcode::JSR => jump_to_subroutine(&mut self.registers, instr),
                 Opcode::AND => and(&mut self.registers, instr),
-                Opcode::LDR => load_register(&mut self.registers, &mut self.memory, instr),
+                Opcode::LDR => load_register(&mut self.registers, &mut self.memory, instr)?,
                 Opcode::STR => store_register(&mut self.registers, &mut self.memory, instr),
                 Opcode::NOT => not(&mut self.registers, instr),
-                Opcode::LDI => load_indirect(&mut self.registers, &mut self.memory, instr),
-                Opcode::STI => store_indirect(&mut self.registers, &mut self.memory, instr),
+                Opcode::LDI => load_indirect(&mut self.registers, &mut self.memory, instr)?,
+                Opcode::STI => store_indirect(&mut self.registers, &mut self.memory, instr)?,
                 Opcode::JMP => jump(&mut self.registers, instr),
                 Opcode::LEA => load_effective_address(&mut self.registers, instr),
                 Opcode::TRAP => {
-                    traps::execute(&mut self.registers, &mut self.memory, instr, &mut running)
+                    traps::execute(&mut self.registers, &mut self.memory, instr, &mut running)?
                 }
                 Opcode::RTI | Opcode::RES => {
                     println!("RTI and RES are not implemented");
                 }
             }
         }
+        Ok(())
     }
 }

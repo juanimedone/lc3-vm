@@ -29,7 +29,9 @@ fn main() {
             exit(1);
         }
     }
-    vm.run();
+    if let Err(e) = vm.run() {
+        eprintln!("Error while running the vm: {}", e)
+    }
 
     if let Err(e) = restore_input_buffering(&original_tio) {
         eprintln!("Error restoring input buffering: {}", e);
