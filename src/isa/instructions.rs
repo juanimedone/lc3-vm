@@ -5,7 +5,7 @@ pub enum Opcode {
     ADD,    // add
     LD,     // load
     ST,     // store
-    JSR,    // jump register
+    JSR,    // jump to subroutine
     AND,    // bitwise and
     LDR,    // load register
     STR,    // store register
