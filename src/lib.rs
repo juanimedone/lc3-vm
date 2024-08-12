@@ -1,7 +1,4 @@
-pub mod flags;
-pub mod instructions;
-pub mod memory;
-pub mod registers;
-pub mod traps;
+pub mod hardware;
+pub mod isa;
 pub mod utils;
 pub mod vm;

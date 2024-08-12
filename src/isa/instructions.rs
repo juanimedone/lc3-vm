@@ -1,11 +1,11 @@
-use crate::{flags::Flag, memory::Memory, registers::*, utils::sign_extend};
+use crate::{hardware::memory::Memory, hardware::registers::*, utils::sign_extend};
 
 pub enum Opcode {
     BR = 0, // branch
     ADD,    // add
     LD,     // load
     ST,     // store
-    JSR,    // jump register
+    JSR,    // jump to subroutine
     AND,    // bitwise and
     LDR,    // load register
     STR,    // store register
@@ -19,15 +19,27 @@ pub enum Opcode {
     TRAP,   // execute trap
 }
 
-pub fn update_flags(registers: &mut Registers, reg: Register) {
-    let value = registers.read(reg);
-    if value == 0 {
-        registers.write(Register::COND, Flag::ZRO as u16);
-    } else if value >> 15 == 1 {
-        // a 1 in the left-most bit indicates negative
-        registers.write(Register::COND, Flag::NEG as u16);
-    } else {
-        registers.write(Register::COND, Flag::POS as u16);
+impl From<u16> for Opcode {
+    fn from(value: u16) -> Self {
+        match value {
+            0 => Opcode::BR,
+            1 => Opcode::ADD,
+            2 => Opcode::LD,
+            3 => Opcode::ST,
+            4 => Opcode::JSR,
+            5 => Opcode::AND,
+            6 => Opcode::LDR,
+            7 => Opcode::STR,
+            8 => Opcode::RTI,
+            9 => Opcode::NOT,
+            10 => Opcode::LDI,
+            11 => Opcode::STI,
+            12 => Opcode::JMP,
+            13 => Opcode::RES,
+            14 => Opcode::LEA,
+            15 => Opcode::TRAP,
+            _ => panic!("Invalid opcode value"),
+        }
     }
 }
 
@@ -49,27 +61,30 @@ pub fn add(registers: &mut Registers, instr: u16) {
 
     if imm_flag == 1 {
         let imm5 = sign_extend(instr & 0x1F, 5);
-        let result = registers.read(Register::from(r1)) + imm5;
+        let result = registers.read(Register::from(r1)).wrapping_add(imm5);
         registers.write(Register::from(r0), result);
     } else {
         let r2 = instr & 0x7;
-        let result = registers.read(Register::from(r1)) + registers.read(Register::from(r2));
+        let result = registers
+            .read(Register::from(r1))
+            .wrapping_add(registers.read(Register::from(r2)));
         registers.write(Register::from(r0), result);
     }
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
-pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let pc = registers.read(Register::PC);
 
     let address = pc.wrapping_add(pc_offset);
-    let value = memory.read(address);
+    let value = memory.read(address)?;
     registers.write(Register::from(r0), value);
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
+    Ok(())
 }
 
 pub fn store(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -121,20 +136,25 @@ pub fn and(registers: &mut Registers, instr: u16) {
         );
     }
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
-pub fn load_register(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn load_register(
+    registers: &mut Registers,
+    memory: &mut Memory,
+    instr: u16,
+) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let r1 = (instr >> 6) & 0x7;
     let offset = sign_extend(instr & 0x3F, 6);
 
     let base_address = registers.read(Register::from(r1));
     let final_address = base_address.wrapping_add(offset);
-    let value = memory.read(final_address);
+    let value = memory.read(final_address)?;
     registers.write(Register::from(r0), value);
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
+    Ok(())
 }
 
 pub fn store_register(registers: &mut Registers, memory: &mut Memory, instr: u16) {
@@ -154,30 +174,40 @@ pub fn not(registers: &mut Registers, instr: u16) {
 
     registers.write(Register::from(r0), !registers.read(Register::from(r1)));
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
 
-pub fn load_indirect(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn load_indirect(
+    registers: &mut Registers,
+    memory: &mut Memory,
+    instr: u16,
+) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let pc = registers.read(Register::PC);
 
-    let address = memory.read(pc.wrapping_add(pc_offset));
-    let value = memory.read(address);
+    let address = memory.read(pc.wrapping_add(pc_offset))?;
+    let value = memory.read(address)?;
     registers.write(Register::from(r0), value);
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
+    Ok(())
 }
 
-pub fn store_indirect(registers: &mut Registers, memory: &mut Memory, instr: u16) {
+pub fn store_indirect(
+    registers: &mut Registers,
+    memory: &mut Memory,
+    instr: u16,
+) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let pc = registers.read(Register::PC);
 
     let intermediate_address = pc.wrapping_add(pc_offset);
-    let final_address = memory.read(intermediate_address);
+    let final_address = memory.read(intermediate_address)?;
     let value = registers.read(Register::from(r0));
     memory.write(final_address, value);
+    Ok(())
 }
 
 pub fn jump(registers: &mut Registers, instr: u16) {
@@ -193,5 +223,5 @@ pub fn load_effective_address(registers: &mut Registers, instr: u16) {
     let effective_address = pc.wrapping_add(pc_offset);
     registers.write(Register::from(r0), effective_address);
 
-    update_flags(registers, Register::from(r0));
+    registers.update_flags(Register::from(r0));
 }
