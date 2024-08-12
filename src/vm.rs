@@ -4,6 +4,7 @@ use crate::isa::{instructions::*, traps};
 use std::fs::File;
 use std::io::Read;
 
+/// The VM struct represents the LC-3 virtual machine, containing the memory and registers.
 #[derive(Default)]
 pub struct VM {
     memory: Memory,
@@ -11,6 +12,11 @@ pub struct VM {
 }
 
 impl VM {
+    /// Creates a new instance of the VM with initialized memory and registers.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `VM`.
     pub fn new() -> Self {
         Self {
             memory: Memory::new(),
@@ -18,6 +24,15 @@ impl VM {
         }
     }
 
+    /// Reads an image file and loads its contents into the VM's memory.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - A string slice that holds the path to the object file to be loaded.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `String` error if the file cannot be opened or read.
     pub fn read_image_file(&mut self, path: &str) -> Result<(), String> {
         let mut file = File::open(path).map_err(|e| e.to_string())?;
         let mut origin_bytes = [0u8; 2];
@@ -45,6 +60,11 @@ impl VM {
         Ok(())
     }
 
+    /// Runs the VM, executing instructions in a loop until the VM is halted.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `String` error if there is an issue with reading memory or executing instructions.
     pub fn run(&mut self) -> Result<(), String> {
         let mut running = true;
         while running {

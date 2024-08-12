@@ -1,16 +1,33 @@
 use crate::hardware::{memory::Memory, registers::*};
 use std::io::{self, Read, Write};
 
+/// Represents LC-3 trap codes.
 pub enum Trapcode {
-    GETC = 0x20,  // Get character from keyboard, not echoed onto the terminal
-    OUT = 0x21,   // Output a character
-    PUTS = 0x22,  // Output a word string
-    IN = 0x23,    // Get character from keyboard, echoed onto the terminal
-    PUTSP = 0x24, // Output a byte string
-    HALT = 0x25,  // Halt the program
+    /// Get character from keyboard, not echoed onto the terminal.
+    GETC = 0x20,
+
+    /// Output a character.
+    OUT = 0x21,
+
+    /// Output a word string.
+    PUTS = 0x22,
+
+    /// Get character from keyboard, echoed onto the terminal.
+    IN = 0x23,
+
+    /// Output a byte string.
+    PUTSP = 0x24,
+
+    /// Halt the program.
+    HALT = 0x25,
 }
 
 impl From<u16> for Trapcode {
+    /// Converts a 16-bit unsigned integer into a `Trapcode` enum variant.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not a valid trap code (0x20 to 0x25).
     fn from(value: u16) -> Self {
         match value {
             0x20 => Trapcode::GETC,
@@ -24,6 +41,15 @@ impl From<u16> for Trapcode {
     }
 }
 
+/// Executes the trap instruction.
+///
+/// This function processes a trap instruction, calling the appropriate function based on the trap code.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
+/// - `instr`: The full instruction including the trap code.
+/// - `running`: A mutable reference to the running status of the program.
 pub fn execute(
     registers: &mut Registers,
     memory: &mut Memory,
@@ -44,6 +70,12 @@ pub fn execute(
     Ok(())
 }
 
+/// Executes the GETC trap code.
+///
+/// This function reads a character from the keyboard (not echoed) and stores it in register R0.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
 fn getc(registers: &mut Registers) -> Result<(), String> {
     let ch = io::stdin()
         .bytes()
@@ -55,12 +87,25 @@ fn getc(registers: &mut Registers) -> Result<(), String> {
     Ok(())
 }
 
+/// Executes the OUT trap code.
+///
+/// This function outputs a character from register R0 to the terminal.
+///
+/// # Parameters
+/// - `registers`: A reference to the `Registers` object.
 fn out(registers: &Registers) -> Result<(), String> {
     let ch = registers.read(Register::R0);
     print!("{}", ch as u8 as char);
     io::stdout().flush().map_err(|e| e.to_string())
 }
 
+/// Executes the PUTS trap code.
+///
+/// This function outputs a null-terminated string starting from the address in register R0.
+///
+/// # Parameters
+/// - `registers`: A reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
 fn puts(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
     let mut address = registers.read(Register::R0);
     loop {
@@ -74,6 +119,12 @@ fn puts(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
     io::stdout().flush().map_err(|e| e.to_string())
 }
 
+/// Executes the IN trap code.
+///
+/// This function prompts the user to enter a character, echoes it, and stores it in register R0.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
 fn in_(registers: &mut Registers) -> Result<(), String> {
     print!("Enter a character: ");
     io::stdout().flush().map_err(|e| e.to_string())?;
@@ -89,6 +140,14 @@ fn in_(registers: &mut Registers) -> Result<(), String> {
     Ok(())
 }
 
+/// Executes the PUTSP trap code.
+///
+/// This function outputs a string of bytes starting from the address in register R0,
+/// where each word contains two ASCII characters.
+///
+/// # Parameters
+/// - `registers`: A reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
 fn putsp(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
     let mut address = registers.read(Register::R0);
     loop {
@@ -109,6 +168,12 @@ fn putsp(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
     io::stdout().flush().map_err(|e| e.to_string())
 }
 
+/// Executes the HALT trap code.
+///
+/// This function halts the execution of the program and prints a message.
+///
+/// # Parameters
+/// - `running`: A mutable reference to the running status of the program.
 fn halt(running: &mut bool) -> Result<(), String> {
     println!("Program halted");
     io::stdout().flush().map_err(|e| e.to_string())?;
