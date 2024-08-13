@@ -63,3 +63,40 @@ pub fn sign_extend(x: u16, bit_count: usize) -> u16 {
         x
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sign_extend_bit_is_0() {
+        let value = 0b0000_0000_0011_1111;
+        let bit_count = 7;
+        let expected = 0b0000_0000_0011_1111;
+        assert_eq!(sign_extend(value, bit_count), expected);
+    }
+
+    #[test]
+    fn sign_extend_bit_is_1() {
+        let value = 0b0000_0000_0011_1111;
+        let bit_count = 6;
+        let expected = 0b1111_1111_1111_1111;
+        assert_eq!(sign_extend(value, bit_count), expected);
+    }
+
+    #[test]
+    fn sign_extend_zero() {
+        let value = 0b0000_0000_0000_0000;
+        let bit_count = 1;
+        let expected = 0b0000_0000_0000_0000;
+        assert_eq!(sign_extend(value, bit_count), expected);
+    }
+
+    #[test]
+    fn sign_extend_edge_case() {
+        let value = 0b0000_0000_0000_0001;
+        let bit_count = 1;
+        let expected = 0b1111_1111_1111_1111;
+        assert_eq!(sign_extend(value, bit_count), expected);
+    }
+}

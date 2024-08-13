@@ -97,3 +97,52 @@ impl VM {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{self, Write};
+
+    const TEST_FILES_PATH: &str = "tests/assembly/";
+
+    // Helper function to create a test object file with predefined content
+    fn create_test_file(path: &str, content: &[u8]) -> io::Result<()> {
+        let mut file = File::create(path)?;
+        file.write_all(content)?;
+        Ok(())
+    }
+
+    #[test]
+    fn read_image_file_success() {
+        let content = vec![
+            0x30, 0x00, // Origin address: 0x3000
+            0x12, 0x34, // Instruction 1
+            0xAB, 0xCD, // Instruction 2
+        ];
+        let file_path = format!("{}{}", TEST_FILES_PATH, "test_success.obj");
+        create_test_file(&file_path, &content).expect("Failed to create test file");
+
+        let mut vm = VM::new();
+        assert!(vm.read_image_file(&file_path).is_ok());
+
+        assert_eq!(vm.memory.read(0x3000).unwrap(), 0x1234);
+        assert_eq!(vm.memory.read(0x3001).unwrap(), 0xABCD);
+    }
+
+    #[test]
+    fn read_image_file_nonexistent_path() {
+        let mut vm = VM::new();
+        assert!(vm.read_image_file("nonexistent_file.obj").is_err());
+    }
+
+    #[test]
+    fn read_image_file_invalid_format() {
+        // Create a file with invalid content (not enough bytes for origin address)
+        let content = vec![0x30];
+        let file_path = format!("{}{}", TEST_FILES_PATH, "test_err.obj");
+        create_test_file(&file_path, &content).expect("Failed to create test file");
+
+        let mut vm = VM::new();
+        assert!(vm.read_image_file(&file_path).is_err());
+    }
+}
