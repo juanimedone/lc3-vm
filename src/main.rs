@@ -1,16 +1,23 @@
+//! Main module for the LC-3 Virtual Machine.
+//!
+//! This module handles the initialization and execution of the LC-3 VM, including
+//! command-line argument parsing, input buffering, and error handling.
+
 use lc3_vm::utils::*;
 use lc3_vm::vm::VM;
 use std::env;
 use std::process::exit;
 
+/// Entry point for the LC-3 Virtual Machine.
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: cargo run [object-file1] ...");
         exit(2);
     }
-
     let mut vm = VM::new();
+
+    // Disable input buffering for immediate input processing
     let original_tio = match disable_input_buffering() {
         Ok(tio) => tio,
         Err(e) => {

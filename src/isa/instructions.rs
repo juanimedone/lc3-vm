@@ -1,5 +1,6 @@
 use crate::{hardware::memory::Memory, hardware::registers::*, utils::sign_extend};
 
+/// Represents the LC-3 opcodes.
 pub enum Opcode {
     BR = 0, // branch
     ADD,    // add
@@ -20,6 +21,11 @@ pub enum Opcode {
 }
 
 impl From<u16> for Opcode {
+    /// Converts a 16-bit unsigned integer into an `Opcode` enum variant.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not a valid opcode (0 to 15).
     fn from(value: u16) -> Self {
         match value {
             0 => Opcode::BR,
@@ -43,6 +49,18 @@ impl From<u16> for Opcode {
     }
 }
 
+/// Executes the BR (branch) instruction.
+///
+/// This function computes the branch target address based on the instruction's offset and condition codes
+/// and updates the program counter if the condition codes are met.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Condition Codes**: Bits 9-11
+/// - **PC Offset**: Bits 0-8
 pub fn branch(registers: &mut Registers, instr: u16) {
     let pc_offset = sign_extend(instr & 0x1FF, 9);
     let instr_cond = (instr >> 9) & 0x7;
@@ -54,6 +72,20 @@ pub fn branch(registers: &mut Registers, instr: u16) {
     }
 }
 
+/// Executes the ADD instruction.
+///
+/// This function performs integer addition. It can either add an immediate value or the value of a register.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Destination Register**: Bits 9-11
+/// - **Source Register 1**: Bits 6-8
+/// - **Immediate Flag**: Bit 5
+/// - **Immediate Value**: Bits 0-4 (if `imm_flag` is 1)
+/// - **Source Register 2**: Bits 0-2 (if `imm_flag` is 0)
 pub fn add(registers: &mut Registers, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let r1 = (instr >> 6) & 0x7;
@@ -74,6 +106,18 @@ pub fn add(registers: &mut Registers, instr: u16) {
     registers.update_flags(Register::from(r0));
 }
 
+/// Executes the LD (load) instruction.
+///
+/// This function loads a value from memory into a register using a PC-relative address.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Destination Register**: Bits 9-11
+/// - **PC Offset**: Bits 0-8
 pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) -> Result<(), String> {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
@@ -87,6 +131,18 @@ pub fn load(registers: &mut Registers, memory: &mut Memory, instr: u16) -> Resul
     Ok(())
 }
 
+/// Executes the ST (store) instruction.
+///
+/// This function stores a value from a register into memory using a PC-relative address.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Source Register**: Bits 9-11
+/// - **PC Offset**: Bits 0-8
 pub fn store(registers: &mut Registers, memory: &mut Memory, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
@@ -97,13 +153,24 @@ pub fn store(registers: &mut Registers, memory: &mut Memory, instr: u16) {
     memory.write(address, value);
 }
 
+/// Executes the JSR (jump to subroutine) instruction.
+///
+/// This function saves the current PC to R7 and then jumps to a new address. It can either use a PC-relative
+/// offset or a register-indirect jump.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Long Flag**: Bit 11
+/// - **PC Offset (JSR)**: Bits 0-10 (if `long_flag` is 1)
+/// - **Base Register (JSRR)**: Bits 6-8 (if `long_flag` is 0)
 pub fn jump_to_subroutine(registers: &mut Registers, instr: u16) {
-    let long_flag = (instr >> 11) & 0x1;
     let current_pc = registers.read(Register::PC);
-
-    // Save the return address (current PC) into R7
     registers.write(Register::R7, current_pc);
 
+    let long_flag = (instr >> 11) & 0x1;
     if long_flag == 1 {
         // JSR: Use PC-relative offset
         let long_pc_offset = sign_extend(instr & 0x7FF, 11);
@@ -117,6 +184,20 @@ pub fn jump_to_subroutine(registers: &mut Registers, instr: u16) {
     }
 }
 
+/// Executes the AND instruction.
+///
+/// This function performs a bitwise AND operation. It can either use an immediate value or another register.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Destination Register**: Bits 9-11
+/// - **Source Register 1**: Bits 6-8
+/// - **Immediate Flag**: Bit 5
+/// - **Immediate Value**: Bits 0-4 (if `imm_flag` is 1)
+/// - **Source Register 2**: Bits 0-2 (if `imm_flag` is 0)
 pub fn and(registers: &mut Registers, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let r1 = (instr >> 6) & 0x7;
@@ -139,6 +220,19 @@ pub fn and(registers: &mut Registers, instr: u16) {
     registers.update_flags(Register::from(r0));
 }
 
+/// Executes the LDR (load register) instruction.
+///
+/// This function loads a value from memory into a register using a base register and an offset.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Destination Register**: Bits 9-11
+/// - **Base Register**: Bits 6-8
+/// - **Offset**: Bits 0-5
 pub fn load_register(
     registers: &mut Registers,
     memory: &mut Memory,
@@ -157,6 +251,19 @@ pub fn load_register(
     Ok(())
 }
 
+/// Executes the STR (store register) instruction.
+///
+/// This function stores a value from a register into memory using a base register and an offset.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Source Register**: Bits 9-11
+/// - **Base Register**: Bits 6-8
+/// - **Offset**: Bits 0-5
 pub fn store_register(registers: &mut Registers, memory: &mut Memory, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let r1 = (instr >> 6) & 0x7;
@@ -168,6 +275,17 @@ pub fn store_register(registers: &mut Registers, memory: &mut Memory, instr: u16
     memory.write(final_address, value);
 }
 
+/// Executes the NOT instruction.
+///
+/// This function performs a bitwise NOT operation on the value of a register and stores the result in another register.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Destination Register**: Bits 9-11
+/// - **Source Register**: Bits 6-8
 pub fn not(registers: &mut Registers, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let r1 = (instr >> 6) & 0x7;
@@ -177,6 +295,18 @@ pub fn not(registers: &mut Registers, instr: u16) {
     registers.update_flags(Register::from(r0));
 }
 
+/// Executes the LDI (load indirect) instruction.
+///
+/// This function loads a value from memory into a register using an address obtained indirectly.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Destination Register**: Bits 9-11
+/// - **PC Offset**: Bits 0-8
 pub fn load_indirect(
     registers: &mut Registers,
     memory: &mut Memory,
@@ -194,6 +324,18 @@ pub fn load_indirect(
     Ok(())
 }
 
+/// Executes the STI (store indirect) instruction.
+///
+/// This function stores a value from a register into memory using an address obtained indirectly.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `memory`: A mutable reference to the `Memory` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Source Register**: Bits 9-11
+/// - **PC Offset**: Bits 0-8
 pub fn store_indirect(
     registers: &mut Registers,
     memory: &mut Memory,
@@ -210,11 +352,32 @@ pub fn store_indirect(
     Ok(())
 }
 
+/// Executes the JMP (jump) instruction.
+///
+/// This function sets the program counter to the value in a register.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Base Register**: Bits 6-8
 pub fn jump(registers: &mut Registers, instr: u16) {
     let r1 = (instr >> 6) & 0x7;
     registers.write(Register::PC, registers.read(Register::from(r1)));
 }
 
+/// Executes the LEA (load effective address) instruction.
+///
+/// This function computes the effective address using a PC-relative offset and stores it in a register.
+///
+/// # Parameters
+/// - `registers`: A mutable reference to the `Registers` object.
+/// - `instr`: A 16-bit unsigned integer representing the full instruction including the opcode and operands.
+///
+/// # Instruction Format
+/// - **Destination Register**: Bits 9-11
+/// - **PC Offset**: Bits 0-8
 pub fn load_effective_address(registers: &mut Registers, instr: u16) {
     let r0 = (instr >> 9) & 0x7;
     let pc_offset = sign_extend(instr & 0x1FF, 9);
@@ -224,4 +387,189 @@ pub fn load_effective_address(registers: &mut Registers, instr: u16) {
     registers.write(Register::from(r0), effective_address);
 
     registers.update_flags(Register::from(r0));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hardware::flags::Flag;
+
+    #[test]
+    fn branch_instruction_positive_condition_updates_pc() {
+        let mut registers = Registers::new();
+        registers.write(Register::COND, Flag::POS as u16);
+
+        // Full instruction: BR (Opcode = 0b0000), Condition = 0b001 (positive), Offset = 5
+        let instr = 0b0000_001_000000101;
+        branch(&mut registers, instr);
+
+        // Check if the PC is updated to 0x3000 + 5 = 0x3005
+        assert_eq!(registers.read(Register::PC), 0x3005);
+    }
+
+    #[test]
+    fn add_instruction_with_immediate_value() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 5);
+
+        // Full instruction: ADD (Opcode = 0b0001), Destination = R0, Source = R1, Immediate Flag = 1, Immediate Value = 3
+        let instr = 0b0001_000_001_1_00011;
+        add(&mut registers, instr);
+
+        // R0 = R1 + 3 = 5 + 3 = 8
+        assert_eq!(registers.read(Register::R0), 8);
+    }
+
+    #[test]
+    fn load_instruction_stores_value_in_register() {
+        let mut registers = Registers::new();
+        let mut memory = Memory::new();
+        memory.write(0x3005, 42);
+
+        // Full instruction: LD (Opcode = 0b0010), Destination = R0, PC Offset = 5
+        let instr = 0b0010_000_000000101;
+        load(&mut registers, &mut memory, instr).unwrap();
+
+        // R0 = memory[0x3000 + 5] = 42
+        assert_eq!(registers.read(Register::R0), 42);
+    }
+
+    #[test]
+    fn store_instruction_updates_memory() {
+        let mut registers = Registers::new();
+        let mut memory = Memory::new();
+        registers.write(Register::R0, 99);
+
+        // Full instruction: ST (Opcode = 0b0011), Source = R0, PC Offset = 5
+        let instr = 0b0011_000_000000101;
+        store(&mut registers, &mut memory, instr);
+
+        // Check if memory at address 0x3000 + 5 = 0x3005 contains the value 99
+        assert_eq!(memory.read(0x3005).unwrap(), 99);
+    }
+
+    #[test]
+    fn jump_to_subroutine_with_long_flag_updates_pc_and_r7() {
+        let mut registers = Registers::new();
+
+        // Full instruction: JSR (Opcode = 0b0100), Long Flag = 1, PC Offset = 5
+        let instr = 0b0100_100000000101;
+        jump_to_subroutine(&mut registers, instr);
+
+        // PC should be updated to 0x3000 + 5 = 0x3005
+        assert_eq!(registers.read(Register::PC), 0x3005);
+        // R7 should contain the old PC value, which is 0x3000
+        assert_eq!(registers.read(Register::R7), 0x3000);
+    }
+
+    #[test]
+    fn and_instruction_with_immediate_value() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 0b1010);
+
+        // Full instruction: AND (Opcode = 0b0101), Destination = R0, Source = R1, Immediate Flag = 1, Immediate Value = 0b0101
+        let instr = 0b0101_000_001_1_00101;
+        and(&mut registers, instr);
+
+        // R0 = R1 & 0b0101 = 0b1010 & 0b0101 = 0b0000
+        assert_eq!(registers.read(Register::R0), 0b0000);
+    }
+
+    #[test]
+    fn load_register_from_memory_updates_register() {
+        let mut registers = Registers::new();
+        let mut memory = Memory::new();
+        memory.write(0x3008, 77);
+        registers.write(Register::R1, PC_START);
+
+        // Full instruction: LDR (Opcode = 0b0110), Destination = R0, Base Register = R1, Offset = 8
+        let instr = 0b0110_000_001_001000;
+        load_register(&mut registers, &mut memory, instr).unwrap();
+
+        // R0 = memory[R1 + 8] = memory[0x3000 + 8] = 77
+        assert_eq!(registers.read(Register::R0), 77);
+    }
+
+    #[test]
+    fn store_register_updates_memory() {
+        let mut registers = Registers::new();
+        let mut memory = Memory::new();
+        registers.write(Register::R0, 55);
+        registers.write(Register::R1, 8);
+
+        // Full instruction: STR (Opcode = 0b0111), Source = R0, Base Register = R1, Offset = 8
+        let instr = 0b0111_000_001_001000;
+        store_register(&mut registers, &mut memory, instr);
+
+        // Check if memory at address R1 + 8 = 16 contains the value 55
+        assert_eq!(memory.read(16).unwrap(), 55);
+    }
+
+    #[test]
+    fn negate_instruction_inverts_bits() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 0b0000_1111);
+
+        // Full instruction: NOT (Opcode = 0b1001), Destination = R0, Source = R1
+        let instr = 0b1001_000_001_000000;
+        not(&mut registers, instr);
+
+        // R0 = ~R1 = ~0b0000_0000_0000_1111 = 0b1111_1111_1111_0000
+        assert_eq!(registers.read(Register::R0), 0b1111_1111_1111_0000);
+    }
+
+    #[test]
+    fn load_indirect_instruction_updates_register() {
+        let mut registers = Registers::new();
+        let mut memory = Memory::new();
+        memory.write(0x3005, 0x4000);
+        memory.write(0x4000, 88);
+
+        // Full instruction: LDI (Opcode = 0b1010), Destination = R0, PC Offset = 5
+        let instr = 0b1010_000_000000101;
+        load_indirect(&mut registers, &mut memory, instr).unwrap();
+
+        // R0 = memory[memory[0x3000 + 5]] = memory[0x4000] = 88
+        assert_eq!(registers.read(Register::R0), 88);
+    }
+
+    #[test]
+    fn store_indirect_instruction_updates_memory() {
+        let mut registers = Registers::new();
+        let mut memory = Memory::new();
+        registers.write(Register::R0, 99);
+        memory.write(0x3005, 0x4000);
+
+        // Full instruction: STI (Opcode = 0b1011), Source = R0, PC Offset = 5
+        let instr = 0b1011_000_000000101;
+        store_indirect(&mut registers, &mut memory, instr).unwrap();
+
+        // Check if memory at address 0x4000 contains the value 99
+        assert_eq!(memory.read(0x4000).unwrap(), 99);
+    }
+
+    #[test]
+    fn jump_instruction_updates_pc() {
+        let mut registers = Registers::new();
+        registers.write(Register::R0, 0x4000);
+
+        // Full instruction: JMP (Opcode = 0b1100), Base Register = R0
+        let instr = 0b1100_000_000000000;
+        jump(&mut registers, instr);
+
+        // PC should be updated to 0x4000
+        assert_eq!(registers.read(Register::PC), 0x4000);
+    }
+
+    #[test]
+    fn load_effective_address_updates_register() {
+        let mut registers = Registers::new();
+
+        // Full instruction: LEA (Opcode = 0b1110), Destination = R0, PC Offset = 5
+        let instr = 0b1110_000_000000101;
+        load_effective_address(&mut registers, instr);
+
+        // R0 should be updated to 0x3000 + 5 = 0x3005
+        assert_eq!(registers.read(Register::R0), 0x3005);
+    }
 }

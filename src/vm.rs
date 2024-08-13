@@ -4,6 +4,7 @@ use crate::isa::{instructions::*, traps};
 use std::fs::File;
 use std::io::Read;
 
+/// The VM struct represents the LC-3 virtual machine, containing the memory and registers.
 #[derive(Default)]
 pub struct VM {
     memory: Memory,
@@ -11,6 +12,11 @@ pub struct VM {
 }
 
 impl VM {
+    /// Creates a new instance of the VM with initialized memory and registers.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `VM`.
     pub fn new() -> Self {
         Self {
             memory: Memory::new(),
@@ -18,6 +24,15 @@ impl VM {
         }
     }
 
+    /// Reads an image file and loads its contents into the VM's memory.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - A string slice that holds the path to the object file to be loaded.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `String` error if the file cannot be opened or read.
     pub fn read_image_file(&mut self, path: &str) -> Result<(), String> {
         let mut file = File::open(path).map_err(|e| e.to_string())?;
         let mut origin_bytes = [0u8; 2];
@@ -45,6 +60,11 @@ impl VM {
         Ok(())
     }
 
+    /// Runs the VM, executing instructions in a loop until the VM is halted.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `String` error if there is an issue with reading memory or executing instructions.
     pub fn run(&mut self) -> Result<(), String> {
         let mut running = true;
         while running {
@@ -75,5 +95,54 @@ impl VM {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{self, Write};
+
+    const TEST_FILES_PATH: &str = "tests/assembly/";
+
+    // Helper function to create a test object file with predefined content
+    fn create_test_file(path: &str, content: &[u8]) -> io::Result<()> {
+        let mut file = File::create(path)?;
+        file.write_all(content)?;
+        Ok(())
+    }
+
+    #[test]
+    fn read_image_file_success() {
+        let content = vec![
+            0x30, 0x00, // Origin address: 0x3000
+            0x12, 0x34, // Instruction 1
+            0xAB, 0xCD, // Instruction 2
+        ];
+        let file_path = format!("{}{}", TEST_FILES_PATH, "test_success.obj");
+        create_test_file(&file_path, &content).expect("Failed to create test file");
+
+        let mut vm = VM::new();
+        assert!(vm.read_image_file(&file_path).is_ok());
+
+        assert_eq!(vm.memory.read(0x3000).unwrap(), 0x1234);
+        assert_eq!(vm.memory.read(0x3001).unwrap(), 0xABCD);
+    }
+
+    #[test]
+    fn read_image_file_nonexistent_path() {
+        let mut vm = VM::new();
+        assert!(vm.read_image_file("nonexistent_file.obj").is_err());
+    }
+
+    #[test]
+    fn read_image_file_invalid_format() {
+        // Create a file with invalid content (not enough bytes for origin address)
+        let content = vec![0x30];
+        let file_path = format!("{}{}", TEST_FILES_PATH, "test_err.obj");
+        create_test_file(&file_path, &content).expect("Failed to create test file");
+
+        let mut vm = VM::new();
+        assert!(vm.read_image_file(&file_path).is_err());
     }
 }
