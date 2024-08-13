@@ -105,3 +105,65 @@ impl Registers {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_new_registers() {
+        let registers = Registers::new();
+        assert_eq!(registers.registers[Register::PC as usize], PC_START);
+        assert_eq!(
+            registers.registers[Register::COND as usize],
+            Flag::ZRO as u16
+        );
+        for reg in 0..(Register::COUNT as usize - 2) {
+            assert_eq!(registers.registers[reg], 0);
+        }
+    }
+
+    #[test]
+    fn read_register() {
+        let mut registers = Registers::new();
+        registers.registers[Register::R0 as usize] = 1234;
+        assert_eq!(registers.read(Register::R0), 1234);
+    }
+
+    #[test]
+    fn write_register() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 5678);
+        assert_eq!(registers.read(Register::R1), 5678);
+    }
+
+    #[test]
+    fn update_flags_zero() {
+        let mut registers = Registers::new();
+        registers.write(Register::R2, 0);
+        registers.update_flags(Register::R2);
+        assert_eq!(registers.read(Register::COND), Flag::ZRO as u16);
+    }
+
+    #[test]
+    fn update_flags_negative() {
+        let mut registers = Registers::new();
+        registers.write(Register::R3, 0x8000); // Negative value
+        registers.update_flags(Register::R3);
+        assert_eq!(registers.read(Register::COND), Flag::NEG as u16);
+    }
+
+    #[test]
+    fn update_flags_positive() {
+        let mut registers = Registers::new();
+        registers.write(Register::R4, 1); // Positive value
+        registers.update_flags(Register::R4);
+        assert_eq!(registers.read(Register::COND), Flag::POS as u16);
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid register value")]
+    fn from_invalid_register_value() {
+        let _ = Register::from(10);
+    }
+}

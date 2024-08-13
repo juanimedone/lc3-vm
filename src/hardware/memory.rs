@@ -67,3 +67,38 @@ impl Memory {
         self.memory[address as usize] = value;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_new_memory() {
+        let memory = Memory::new();
+        assert_eq!(memory.memory.len(), MEMORY_SIZE);
+        for &value in &memory.memory {
+            assert_eq!(value, 0);
+        }
+    }
+
+    #[test]
+    fn read_regular_address() {
+        let mut memory = Memory::new();
+        memory.memory[100] = 1234;
+        assert_eq!(memory.read(100).unwrap(), 1234);
+    }
+
+    #[test]
+    fn read_kbsr_with_no_key_pressed() {
+        let mut memory = Memory::new();
+        memory.memory[MemoryMappedRegister::KBSR as usize] = 10;
+        assert_eq!(memory.read(MemoryMappedRegister::KBSR as u16).unwrap(), 0); // ready bit cleared
+    }
+
+    #[test]
+    fn test_memory_write() {
+        let mut memory = Memory::new();
+        memory.write(200, 5678);
+        assert_eq!(memory.read(200).unwrap(), 5678);
+    }
+}
