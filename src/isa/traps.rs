@@ -114,7 +114,7 @@ fn puts(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
             break;
         }
         print!("{}", word as u8 as char);
-        address += 1;
+        address = address.wrapping_add(1);
     }
     io::stdout().flush().map_err(|e| e.to_string())
 }
@@ -163,7 +163,7 @@ fn putsp(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
             print!("{}", char2);
         }
 
-        address += 1;
+        address = address.wrapping_add(1);
     }
     io::stdout().flush().map_err(|e| e.to_string())
 }
