@@ -1,8 +1,9 @@
-use crate::hardware::memory::{Memory, MEMORY_SIZE};
+use crate::hardware::memory::Memory;
 use crate::hardware::registers::*;
 use crate::isa::{instructions::*, traps};
+use byteorder::{BigEndian, ReadBytesExt};
 use std::fs::File;
-use std::io::Read;
+use std::io::BufReader;
 
 /// The VM struct represents the LC-3 virtual machine, containing the memory and registers.
 #[derive(Default)]
@@ -32,29 +33,18 @@ impl VM {
     ///
     /// # Errors
     ///
-    /// Returns a `String` error if the file cannot be opened or read.
+    /// Returns a `String` error if the file cannot be opened, read, or if there is a memory overflow.
     pub fn read_image_file(&mut self, path: &str) -> Result<(), String> {
-        let mut file = File::open(path).map_err(|e| e.to_string())?;
-        let mut origin_bytes = [0u8; 2];
-        file.read_exact(&mut origin_bytes)
-            .map_err(|e| e.to_string())?;
-        let origin = u16::from_be_bytes(origin_bytes);
+        let file = File::open(path).map_err(|e| e.to_string())?;
+        let mut reader = BufReader::new(file);
 
-        let max_read = MEMORY_SIZE - origin as usize;
-        let mut buffer = vec![0u16; max_read];
-        let mut byte_buffer = vec![0u8; max_read * 2];
-        let read = file.read(&mut byte_buffer).map_err(|e| e.to_string())?;
-        let read_u16_count = read / 2;
-
-        for i in 0..read_u16_count {
-            let byte1 = byte_buffer[i * 2];
-            let byte2 = byte_buffer[i * 2 + 1];
-            let value = u16::from_be_bytes([byte1, byte2]);
-            buffer[i] = value;
-        }
-
-        for (i, value) in buffer.iter().take(read_u16_count).enumerate() {
-            self.memory.write(origin + i as u16, *value);
+        // origin (first 2 bytes)
+        let mut address = reader.read_u16::<BigEndian>().map_err(|e| e.to_string())?;
+        while let Ok(instr) = reader.read_u16::<BigEndian>() {
+            self.memory.write(address, instr);
+            address = address
+                .checked_add(1)
+                .ok_or("Memory overflow, object file is too large")?;
         }
 
         Ok(())
