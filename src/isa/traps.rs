@@ -94,8 +94,8 @@ fn getc(registers: &mut Registers) -> Result<(), String> {
 /// # Parameters
 /// - `registers`: A reference to the `Registers` object.
 fn out(registers: &Registers) -> Result<(), String> {
-    let ch = registers.read(Register::R0);
-    print!("{}", ch as u8 as char);
+    let ch = char::from((registers.read(Register::R0) & 0xFF) as u8);
+    print!("{}", ch);
     io::stdout().flush().map_err(|e| e.to_string())
 }
 
@@ -113,7 +113,7 @@ fn puts(registers: &Registers, memory: &mut Memory) -> Result<(), String> {
         if word == 0 {
             break;
         }
-        print!("{}", word as u8 as char);
+        print!("{}", char::from((word & 0xFF) as u8));
         address = address.wrapping_add(1);
     }
     io::stdout().flush().map_err(|e| e.to_string())
