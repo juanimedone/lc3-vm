@@ -11,15 +11,20 @@ This project is an implementation of a simple LC-3 (Little Computer 3) virtual m
 
 1. Clone the repository.
 
-2. Run the VM.
-    
-    You can run the VM with one or more LC-3 object files as arguments. Replace `object-file1` and `object-file2` with the paths to your LC-3 object files.
-
+2. Install the VM.
     ```bash
-    cargo run object-file1 object-file2 ...
+    cargo install --path .
     ```
+
+3. Run the VM.
+
+    You can run the VM with one or more LC-3 object files as arguments. 
+    ```bash
+    lc3-vm object-file1 object-file2 ...
+    ```
+    Replace `object-file1` and `object-file2` with the **paths** to your LC-3 object files.
 
     Example:
     ```bash
-    cargo run assembly/rogue.obj
+    lc3-vm assembly/rogue.obj
     ```
