@@ -13,10 +13,15 @@ pub enum MemoryMappedRegister {
 }
 
 /// Struct representing the memory of the LC-3 VM.
-#[derive(Default)]
 pub struct Memory {
-    /// Vector storing the memory contents.
-    memory: Vec<u16>,
+    /// Array storing the memory contents.
+    memory: [u16; MEMORY_SIZE],
+}
+
+impl Default for Memory {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Memory {
@@ -27,7 +32,7 @@ impl Memory {
     /// A new instance of `Memory`.
     pub fn new() -> Self {
         Self {
-            memory: vec![0; MEMORY_SIZE],
+            memory: [0; MEMORY_SIZE],
         }
     }
 
