@@ -1,10 +1,9 @@
 use nix::sys::select::{select, FdSet};
 use nix::sys::time::{TimeVal, TimeValLike};
 use std::io::{self, Read};
-use std::os::unix::io::RawFd;
 use termios::{tcsetattr, Termios, ECHO, ICANON, TCSANOW};
 
-const STDIN_FD: RawFd = 0; // File descriptor for standard input
+const STDIN_FD: i32 = 0; // File descriptor for standard input
 
 /// Disables input buffering to allow immediate reading of input.
 ///
