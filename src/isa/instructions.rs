@@ -203,7 +203,7 @@ pub fn and(registers: &mut Registers, instr: u16) {
     let r1 = (instr >> 6) & 0x7;
     let imm_flag = (instr >> 5) & 0x1;
 
-    if imm_flag != 0 {
+    if imm_flag == 1 {
         let imm5 = sign_extend(instr & 0x1F, 5);
         registers.write(
             Register::from(r0),
@@ -393,9 +393,10 @@ pub fn load_effective_address(registers: &mut Registers, instr: u16) {
 mod tests {
     use super::*;
     use crate::hardware::flags::Flag;
+    use std::u16;
 
     #[test]
-    fn branch_instruction_positive_condition_updates_pc() {
+    fn branch_matching_positive_condition() {
         let mut registers = Registers::new();
         registers.write(Register::COND, Flag::POS as u16);
 
@@ -403,12 +404,51 @@ mod tests {
         let instr = 0b0000_001_000000101;
         branch(&mut registers, instr);
 
-        // Check if the PC is updated to 0x3000 + 5 = 0x3005
-        assert_eq!(registers.read(Register::PC), 0x3005);
+        // Check if the PC is updated to PC_START + 5
+        assert_eq!(registers.read(Register::PC), PC_START + 5);
     }
 
     #[test]
-    fn add_instruction_with_immediate_value() {
+    fn branch_matching_zero_condition() {
+        let mut registers = Registers::new();
+        registers.write(Register::COND, Flag::ZRO as u16);
+
+        // Full instruction: BR (Opcode = 0b0000), Condition = 0b010 (zero), Offset = 5
+        let instr = 0b0000_010_000000101;
+        branch(&mut registers, instr);
+
+        // Check if the PC is updated to PC_START + 5
+        assert_eq!(registers.read(Register::PC), PC_START + 5);
+    }
+
+    #[test]
+    fn branch_matching_negative_condition() {
+        let mut registers = Registers::new();
+        registers.write(Register::COND, Flag::NEG as u16);
+
+        // Full instruction: BR (Opcode = 0b0000), Condition = 0b100 (negative), Offset = 5
+        let instr = 0b0000_100_000000101;
+        branch(&mut registers, instr);
+
+        // Check if the PC is updated to PC_START + 5
+        assert_eq!(registers.read(Register::PC), PC_START + 5);
+    }
+
+    #[test]
+    fn branch_with_no_matching_condition() {
+        let mut registers = Registers::new();
+        registers.write(Register::COND, Flag::ZRO as u16);
+
+        // Full instruction: BR (Opcode = 0b0000), Condition = 0b001 (positive), Offset = 5
+        let instr = 0b0000_001_000000101;
+        branch(&mut registers, instr);
+
+        // Check if the PC is not updated, it should still be PC_START
+        assert_eq!(registers.read(Register::PC), PC_START);
+    }
+
+    #[test]
+    fn add_immediate_positive_value() {
         let mut registers = Registers::new();
         registers.write(Register::R1, 5);
 
@@ -421,21 +461,103 @@ mod tests {
     }
 
     #[test]
-    fn load_instruction_stores_value_in_register() {
+    fn add_immediate_negative_value() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 5);
+
+        // Full instruction: ADD (Opcode = 0b0001), Destination = R0, Source = R1, Immediate Flag = 1, Immediate Value = -3
+        let instr = 0b0001_000_001_1_11101;
+        add(&mut registers, instr);
+
+        // R0 = R1 + (-3) = 5 - 3 = 2
+        assert_eq!(registers.read(Register::R0), 2);
+    }
+
+    #[test]
+    fn add_immediate_value_with_overflow() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, u16::MAX);
+
+        // Full instruction: ADD (Opcode = 0b0001), Destination = R0, Source = R1, Immediate Flag = 1, Immediate Value = 2
+        let instr = 0b0001_000_001_1_00010;
+        add(&mut registers, instr);
+
+        // R0 = R1 + 2 = 65535 + 2 = 1
+        assert_eq!(registers.read(Register::R0), 1);
+    }
+
+    #[test]
+    fn add_positive_registers_values() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 5);
+        registers.write(Register::R2, 3);
+
+        // Full instruction: ADD (Opcode = 0b0001), Destination = R0, Source1 = R1, Immediate Flag = 0, Source2 = R2
+        let instr = 0b0001_000_001_0_00_010;
+        add(&mut registers, instr);
+
+        // R0 = R1 + R2 = 5 + 3 = 8
+        assert_eq!(registers.read(Register::R0), 8);
+    }
+
+    #[test]
+    fn add_positive_and_negative_registers_values() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 5);
+        registers.write(Register::R2, -3i16 as u16);
+
+        // Full instruction: ADD (Opcode = 0b0001), Destination = R0, Source1 = R1, Immediate Flag = 0, Source2 = R2
+        let instr = 0b0001_000_001_0_00_010;
+        add(&mut registers, instr);
+
+        // R0 = R1 + R2 = 5 + (-3) = 2
+        assert_eq!(registers.read(Register::R0), 2);
+    }
+
+    #[test]
+    fn add_negative_registers_values() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, -5i16 as u16);
+        registers.write(Register::R2, -3i16 as u16);
+
+        // Full instruction: ADD (Opcode = 0b0001), Destination = R0, Source1 = R1, Immediate Flag = 0, Source2 = R2
+        let instr = 0b0001_000_001_0_00_010;
+        add(&mut registers, instr);
+
+        // R0 = R1 + R2 = -5 + (-3) = -8
+        assert_eq!(registers.read(Register::R0), -8i16 as u16);
+    }
+
+    #[test]
+    fn add_registers_values_with_overflow() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, u16::MAX);
+        registers.write(Register::R2, 2);
+
+        // Full instruction: ADD (Opcode = 0b0001), Destination = R0, Source1 = R1, Immediate Flag = 0, Source2 = R2
+        let instr = 0b0001_000_001_0_00_010;
+        add(&mut registers, instr);
+
+        // R0 = R1 + R2 = 65535 + 2 = 1
+        assert_eq!(registers.read(Register::R0), 1);
+    }
+
+    #[test]
+    fn load_updates_register() {
         let mut registers = Registers::new();
         let mut memory = Memory::new();
-        memory.write(0x3005, 42);
+        memory.write(PC_START + 5, 42);
 
         // Full instruction: LD (Opcode = 0b0010), Destination = R0, PC Offset = 5
         let instr = 0b0010_000_000000101;
         load(&mut registers, &mut memory, instr).unwrap();
 
-        // R0 = memory[0x3000 + 5] = 42
+        // R0 = memory[PC_START + 5] = 42
         assert_eq!(registers.read(Register::R0), 42);
     }
 
     #[test]
-    fn store_instruction_updates_memory() {
+    fn store_updates_memory() {
         let mut registers = Registers::new();
         let mut memory = Memory::new();
         registers.write(Register::R0, 99);
@@ -444,26 +566,55 @@ mod tests {
         let instr = 0b0011_000_000000101;
         store(&mut registers, &mut memory, instr);
 
-        // Check if memory at address 0x3000 + 5 = 0x3005 contains the value 99
-        assert_eq!(memory.read(0x3005).unwrap(), 99);
+        // Check if memory at address PC_START + 5 contains the value 99
+        assert_eq!(memory.read(PC_START + 5).unwrap(), 99);
     }
 
     #[test]
-    fn jump_to_subroutine_with_long_flag_updates_pc_and_r7() {
+    fn jump_to_subroutine_with_long_flag_and_positive_offset() {
         let mut registers = Registers::new();
 
         // Full instruction: JSR (Opcode = 0b0100), Long Flag = 1, PC Offset = 5
         let instr = 0b0100_100000000101;
         jump_to_subroutine(&mut registers, instr);
 
-        // PC should be updated to 0x3000 + 5 = 0x3005
-        assert_eq!(registers.read(Register::PC), 0x3005);
-        // R7 should contain the old PC value, which is 0x3000
-        assert_eq!(registers.read(Register::R7), 0x3000);
+        // PC should be updated to PC_START + 5
+        assert_eq!(registers.read(Register::PC), PC_START + 5);
+        // R7 should contain the old PC value, which is PC_START
+        assert_eq!(registers.read(Register::R7), PC_START);
     }
 
     #[test]
-    fn and_instruction_with_immediate_value() {
+    fn jump_to_subroutine_with_long_flag_and_negative_offset() {
+        let mut registers = Registers::new();
+
+        // Full instruction: JSR (Opcode = 0b0100), Long Flag = 1, PC Offset = -5
+        let instr = 0b0100_111111111011;
+        jump_to_subroutine(&mut registers, instr);
+
+        // PC should be updated to PC_START - 5 = 0x2FFB
+        assert_eq!(registers.read(Register::PC), 0x2FFB);
+        // R7 should contain the old PC value, which is PC_START
+        assert_eq!(registers.read(Register::R7), PC_START);
+    }
+
+    #[test]
+    fn jump_to_subroutine_register_indirect() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 0x4000);
+
+        // Full instruction: JSRR (Opcode = 0b0100), Long Flag = 0, Base Register = R1
+        let instr = 0b0100_000_001_000000;
+        jump_to_subroutine(&mut registers, instr);
+
+        // PC should be updated to the value in R1, which is 0x4000
+        assert_eq!(registers.read(Register::PC), 0x4000);
+        // R7 should contain the old PC value, which is PC_START
+        assert_eq!(registers.read(Register::R7), PC_START);
+    }
+
+    #[test]
+    fn and_with_immediate_value() {
         let mut registers = Registers::new();
         registers.write(Register::R1, 0b1010);
 
@@ -476,7 +627,21 @@ mod tests {
     }
 
     #[test]
-    fn load_register_from_memory_updates_register() {
+    fn and_with_register() {
+        let mut registers = Registers::new();
+        registers.write(Register::R1, 0b1010);
+        registers.write(Register::R2, 0b0110);
+
+        // Full instruction: AND (Opcode = 0b0101), Destination = R0, Source1 = R1, Immediate Flag = 0, Source2 = R2
+        let instr = 0b0101_000_001_0_00010;
+        and(&mut registers, instr);
+
+        // R0 = R1 & R2 = 0b1010 & 0b0110 = 0b0010
+        assert_eq!(registers.read(Register::R0), 0b0010);
+    }
+
+    #[test]
+    fn load_register_updates_register() {
         let mut registers = Registers::new();
         let mut memory = Memory::new();
         memory.write(0x3008, 77);
@@ -486,7 +651,7 @@ mod tests {
         let instr = 0b0110_000_001_001000;
         load_register(&mut registers, &mut memory, instr).unwrap();
 
-        // R0 = memory[R1 + 8] = memory[0x3000 + 8] = 77
+        // R0 = memory[R1 + 8] = memory[PC_START + 8] = 77
         assert_eq!(registers.read(Register::R0), 77);
     }
 
@@ -506,7 +671,7 @@ mod tests {
     }
 
     #[test]
-    fn negate_instruction_inverts_bits() {
+    fn not_instruction_inverts_bits_correctly() {
         let mut registers = Registers::new();
         registers.write(Register::R1, 0b0000_1111);
 
@@ -519,26 +684,26 @@ mod tests {
     }
 
     #[test]
-    fn load_indirect_instruction_updates_register() {
+    fn load_indirect_updates_register() {
         let mut registers = Registers::new();
         let mut memory = Memory::new();
-        memory.write(0x3005, 0x4000);
+        memory.write(PC_START + 5, 0x4000);
         memory.write(0x4000, 88);
 
         // Full instruction: LDI (Opcode = 0b1010), Destination = R0, PC Offset = 5
         let instr = 0b1010_000_000000101;
         load_indirect(&mut registers, &mut memory, instr).unwrap();
 
-        // R0 = memory[memory[0x3000 + 5]] = memory[0x4000] = 88
+        // R0 = memory[memory[PC_START + 5]] = memory[0x4000] = 88
         assert_eq!(registers.read(Register::R0), 88);
     }
 
     #[test]
-    fn store_indirect_instruction_updates_memory() {
+    fn store_indirect_updates_memory() {
         let mut registers = Registers::new();
         let mut memory = Memory::new();
         registers.write(Register::R0, 99);
-        memory.write(0x3005, 0x4000);
+        memory.write(PC_START + 5, 0x4000);
 
         // Full instruction: STI (Opcode = 0b1011), Source = R0, PC Offset = 5
         let instr = 0b1011_000_000000101;
@@ -549,7 +714,7 @@ mod tests {
     }
 
     #[test]
-    fn jump_instruction_updates_pc() {
+    fn jump_updates_pc() {
         let mut registers = Registers::new();
         registers.write(Register::R0, 0x4000);
 
@@ -569,7 +734,7 @@ mod tests {
         let instr = 0b1110_000_000000101;
         load_effective_address(&mut registers, instr);
 
-        // R0 should be updated to 0x3000 + 5 = 0x3005
-        assert_eq!(registers.read(Register::R0), 0x3005);
+        // R0 should be updated to PC_START + 5
+        assert_eq!(registers.read(Register::R0), PC_START + 5);
     }
 }
