@@ -44,8 +44,8 @@ impl From<u16> for Register {
 /// Structure representing the registers of the LC-3 VM.
 #[derive(Default)]
 pub struct Registers {
-    /// Vector storing the registers contents.
-    registers: Vec<u16>,
+    /// Array storing the registers contents.
+    registers: [u16; Register::COUNT as usize],
 }
 
 impl Registers {
@@ -58,7 +58,7 @@ impl Registers {
     ///
     /// A new instance of `Registers`.
     pub fn new() -> Self {
-        let mut registers = vec![0; Register::COUNT as usize];
+        let mut registers = [0; Register::COUNT as usize];
         registers[Register::PC as usize] = PC_START;
         registers[Register::COND as usize] = Flag::ZRO as u16;
 
