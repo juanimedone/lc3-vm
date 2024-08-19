@@ -1,4 +1,4 @@
-use crate::utils::{check_key, getchar};
+use crate::utils::getchar;
 
 /// The size of the memory in the LC-3 VM.
 /// 2^16 = 65536 locations of 16 bits each = 128 KB of memory.
@@ -6,17 +6,22 @@ pub const MEMORY_SIZE: usize = 1 << 16;
 
 /// Enum representing memory-mapped registers.
 pub enum MemoryMappedRegister {
-    /// Keyboard status register
+    /// Keyboard status register.
     KBSR = 0xFE00,
-    /// Keyboard data register
+    /// Keyboard data register.
     KBDR = 0xFE02,
 }
 
 /// Struct representing the memory of the LC-3 VM.
-#[derive(Default)]
 pub struct Memory {
-    /// Vector storing the memory contents.
-    memory: Vec<u16>,
+    /// Array storing the memory contents.
+    memory: [u16; MEMORY_SIZE],
+}
+
+impl Default for Memory {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Memory {
@@ -27,14 +32,14 @@ impl Memory {
     /// A new instance of `Memory`.
     pub fn new() -> Self {
         Self {
-            memory: vec![0; MEMORY_SIZE],
+            memory: [0; MEMORY_SIZE],
         }
     }
 
     /// Reads a value from the specified memory address.
     ///
     /// If the address corresponds to a memory-mapped register, the appropriate
-    /// behavior (e.g., checking the keyboard status) is executed.
+    /// behavior (e.g., reading from standard input) is executed.
     ///
     /// # Parameters
     ///
@@ -45,16 +50,15 @@ impl Memory {
     /// A `Result` containing the value read from memory or an error message.
     pub fn read(&mut self, address: u16) -> Result<u16, String> {
         if address == MemoryMappedRegister::KBSR as u16 {
-            if check_key() {
+            let char = getchar()?;
+            if char != 0 {
                 self.memory[address as usize] = 1 << 15; // Set the ready bit
-                self.memory[MemoryMappedRegister::KBDR as usize] = getchar()?;
+                self.memory[MemoryMappedRegister::KBDR as usize] = char;
             } else {
                 self.memory[address as usize] = 0; // Clear the ready bit
             }
-            Ok(self.memory[address as usize])
-        } else {
-            Ok(self.memory[address as usize])
         }
+        Ok(self.memory[address as usize])
     }
 
     /// Writes a value to the specified memory address.
@@ -86,13 +90,6 @@ mod tests {
         let mut memory = Memory::new();
         memory.memory[100] = 1234;
         assert_eq!(memory.read(100).unwrap(), 1234);
-    }
-
-    #[test]
-    fn read_kbsr_with_no_key_pressed() {
-        let mut memory = Memory::new();
-        memory.memory[MemoryMappedRegister::KBSR as usize] = 10;
-        assert_eq!(memory.read(MemoryMappedRegister::KBSR as u16).unwrap(), 0); // ready bit cleared
     }
 
     #[test]

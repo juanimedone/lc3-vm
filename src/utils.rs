@@ -1,10 +1,7 @@
-use nix::sys::select::{select, FdSet};
-use nix::sys::time::{TimeVal, TimeValLike};
 use std::io::{self, Read};
-use std::os::unix::io::RawFd;
 use termios::{tcsetattr, Termios, ECHO, ICANON, TCSANOW};
 
-const STDIN_FD: RawFd = 0; // File descriptor for standard input
+const STDIN_FD: i32 = 0; // File descriptor for standard input
 
 /// Disables input buffering to allow immediate reading of input.
 ///
@@ -23,21 +20,6 @@ pub fn disable_input_buffering() -> io::Result<Termios> {
 /// This function restores the terminal settings to their original state, as obtained from `disable_input_buffering`.
 pub fn restore_input_buffering(original_tio: &Termios) -> io::Result<()> {
     tcsetattr(STDIN_FD, TCSANOW, original_tio)
-}
-
-/// Checks if a key has been pressed on standard input.
-///
-/// This function uses the `select` system call to determine if there is any data available to read from standard input.
-/// Returns `true` if a key has been pressed, `false` otherwise.
-pub fn check_key() -> bool {
-    let mut read_fds = FdSet::new();
-    read_fds.insert(STDIN_FD);
-    let mut timeout = TimeVal::zero();
-
-    match select(None, Some(&mut read_fds), None, None, Some(&mut timeout)) {
-        Ok(n) => n > 0 && read_fds.contains(STDIN_FD),
-        Err(_) => false,
-    }
 }
 
 /// Reads a single character from standard input.
